@@ -28,7 +28,7 @@ function normalizeAudioMetadata(audioObj, defaultSlot = 1) {
     title: audioObj.title || `Audio Recording ${defaultSlot}`,
     description: audioObj.description || '',
     storagePath: audioObj.audio_storage_path || audioObj.storagePath || '',
-    fallbackSampleUrl: audioObj.fallbackSampleUrl || 'https://actions.google.com/sounds/v1/ambiences/outdoor_festival_ambience.ogg',
+    fallbackSampleUrl: audioObj.fallbackSampleUrl || '/audio/sample_audio.mp3',
     durationSeconds: audioObj.duration_seconds || audioObj.durationSeconds || 60,
   };
 }

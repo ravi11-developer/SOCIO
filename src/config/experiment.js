@@ -64,7 +64,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording 1 (Pure Hindi - Male)",
       description: "[PLACEHOLDER: INSERT PURE HINDI MALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_HINDI_MALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/outdoor_festival_ambience.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -76,7 +76,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Pure Hindi - Female)",
       description: "[PLACEHOLDER: INSERT PURE HINDI FEMALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_HINDI_FEMALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/rain_on_roof.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -88,7 +88,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Pure English - Male)",
       description: "[PLACEHOLDER: INSERT PURE ENGLISH MALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_ENGLISH_MALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/daytime_forest_bonfire.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -100,7 +100,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Pure English - Female)",
       description: "[PLACEHOLDER: INSERT PURE ENGLISH FEMALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_ENGLISH_FEMALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -112,7 +112,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Pure Bombay Hindi - Male)",
       description: "[PLACEHOLDER: INSERT PURE BOMBAY HINDI MALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_MALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/office_room_tone.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -124,7 +124,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Pure Bombay Hindi - Female)",
       description: "[PLACEHOLDER: INSERT PURE BOMBAY HINDI FEMALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_FEMALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/summer_night_meadow.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
 
@@ -138,7 +138,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Code-Mixed Hindi - Male)",
       description: "[PLACEHOLDER: INSERT CODE-MIXED HINDI MALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_MALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/city_park.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -150,7 +150,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Code-Mixed Hindi - Female)",
       description: "[PLACEHOLDER: INSERT CODE-MIXED HINDI FEMALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_FEMALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/subway_station_ambience.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -162,7 +162,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Code-Mixed Bombay English - Male)",
       description: "[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH MALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_MALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/distant_train.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
     {
@@ -174,7 +174,7 @@ export const EXPERIMENT_CONFIG = {
       title: "Audio Recording (Code-Mixed Bombay English - Female)",
       description: "[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH FEMALE AUDIO DESCRIPTION]",
       storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_FEMALE]",
-      fallbackSampleUrl: "https://actions.google.com/sounds/v1/ambiences/creek_water_running.ogg",
+      fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     }
   ],

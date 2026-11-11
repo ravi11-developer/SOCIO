@@ -26,7 +26,7 @@ dist-ssr
 # Environment & Secrets (NEVER commit secrets to git)
 .env
 .env*.local
-
+.env.example
 # Researcher exports
 exports/
 node_modules
