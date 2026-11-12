@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = 
+  import.meta.env.VITE_SUPABASE_URL || 'https://kdeqrmyluupkuzfkdrey.supabase.co';
+const supabaseAnonKey = 
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_y23ZSpAt8h14N97ZZej2sQ_9ip7E1hk';
 
 export const isSupabaseConfigured = Boolean(
   import.meta.env.MODE !== 'test' &&
@@ -11,11 +13,10 @@ export const isSupabaseConfigured = Boolean(
   !supabaseUrl.includes('placeholder')
 );
 
-if (!isSupabaseConfigured) {
+if (!isSupabaseConfigured && import.meta.env.MODE !== 'test') {
   console.warn(
     '[Supabase Configuration] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not configured. ' +
-    'The application will run in local-resilient simulation mode. ' +
-    'To connect your live database, please copy .env.example to .env and configure your Supabase project credentials.'
+    'The application will run in local-resilient simulation mode.'
   );
 }
 
