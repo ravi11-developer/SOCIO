@@ -4,6 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(
+  import.meta.env.MODE !== 'test' &&
   supabaseUrl && 
   supabaseAnonKey && 
   supabaseUrl !== 'https://your-project.supabase.co' &&

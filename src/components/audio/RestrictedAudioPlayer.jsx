@@ -29,9 +29,19 @@ export default function RestrictedAudioPlayer({
   const [loadError, setLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasStarted, setHasStarted] = useState(false);
-
   const audioRef = useRef(null);
-  const resolvedUrl = api.getAudioUrl(storagePath, fallbackSampleUrl);
+  const [audioSrc, setAudioSrc] = useState(() => api.getAudioUrl(storagePath, fallbackSampleUrl));
+  const [triedFallback, setTriedFallback] = useState(false);
+
+  // Update audio source when props change
+  useEffect(() => {
+    setAudioSrc(api.getAudioUrl(storagePath, fallbackSampleUrl));
+    setTriedFallback(false);
+    setLoadError(false);
+    setIsLoading(true);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  }, [storagePath, fallbackSampleUrl]);
 
   // Stop any other active media when this mounts
   useEffect(() => {
@@ -76,6 +86,14 @@ export default function RestrictedAudioPlayer({
   };
 
   const handleError = (e) => {
+    if (!triedFallback && Boolean(fallbackSampleUrl) && audioSrc !== fallbackSampleUrl) {
+      console.warn(`[RestrictedAudioPlayer] Remote audio failed to load from ${audioSrc}. Attempting fallback: ${fallbackSampleUrl}`);
+      setTriedFallback(true);
+      setAudioSrc(fallbackSampleUrl);
+      setLoadError(false);
+      setIsLoading(true);
+      return;
+    }
     console.error('Audio playback/load error:', e);
     setIsLoading(false);
     setLoadError(true);
@@ -109,7 +127,7 @@ export default function RestrictedAudioPlayer({
       {/* Hidden Native Audio Element */}
       <audio
         ref={audioRef}
-        src={resolvedUrl}
+        src={audioSrc}
         preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
@@ -210,20 +228,9 @@ export default function RestrictedAudioPlayer({
           </div>
 
           <p className="text-xs text-secondary text-center italic">
-            Playback restrictions: Forward seeking and skipping are disabled. Please listen to the recording in full.
+            Playback restrictions: Forward seeking and skipping are disabled.
           </p>
         </div>
-
-        {/* Completion Notification Banner */}
-        {isCompleted && (
-          <div 
-            className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center space-x-3 text-emerald-800 text-sm font-medium animate-fadeIn"
-            data-testid="audio-completed-notice"
-          >
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span>{completionNotice}</span>
-          </div>
-        )}
       </div>
 
       {/* Continue Action */}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { ExperimentProvider, useExperiment, STAGES } from './context/ExperimentContext';
 import Header from './components/common/Header';
-import ProgressBar from './components/common/ProgressBar';
 import Page1InstructionsConsent from './components/pages/Page1InstructionsConsent';
 import Page2Audio1 from './components/pages/Page2Audio1';
 import Page3Questions1 from './components/pages/Page3Questions1';
@@ -73,17 +72,9 @@ export default function App() {
     <ExperimentProvider>
       <div className="min-h-screen bg-background text-main flex flex-col antialiased">
         <Header />
-        <ProgressBar />
         <div className="flex-1">
           <ExperimentRouter />
         </div>
-        
-        {/* Footer */}
-        <footer className="border-t border-border py-4 text-center text-xs text-secondary bg-card/50">
-          <div className="max-w-content mx-auto px-4">
-            <p>Academic Research Questionnaire &bull; All participant responses are confidential and anonymous.</p>
-          </div>
-        </footer>
       </div>
     </ExperimentProvider>
   );

@@ -19,7 +19,6 @@ export default function Page1InstructionsConsent() {
   const [firstLanguage, setFirstLanguage] = useState(savedFirstLang || '');
   const [secondLanguage, setSecondLanguage] = useState(savedSecondLang || '');
   const [hindiProficiency, setHindiProficiency] = useState(savedHindiProf || null);
-  const [consentChecked, setConsentChecked] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const isFormValid =
@@ -27,8 +26,7 @@ export default function Page1InstructionsConsent() {
     ethnicity &&
     firstLanguage.trim().length > 0 &&
     secondLanguage.trim().length > 0 &&
-    hindiProficiency !== null &&
-    consentChecked;
+    hindiProficiency !== null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,10 +52,6 @@ export default function Page1InstructionsConsent() {
       setErrorMsg('Please rate your proficiency in spoken Hindi on the 1-6 scale.');
       return;
     }
-    if (!consentChecked) {
-      setErrorMsg('You must provide voluntary informed consent to participate.');
-      return;
-    }
 
     try {
       await submitConsentAndDemographics(
@@ -66,7 +60,7 @@ export default function Page1InstructionsConsent() {
         firstLanguage,
         secondLanguage,
         hindiProficiency,
-        consentChecked
+        true
       );
     } catch (err) {
       setErrorMsg(err.message || 'Failed to submit. Please try again.');
@@ -78,7 +72,7 @@ export default function Page1InstructionsConsent() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section A: Instructions */}
         <div className="academic-card p-6 sm:p-8 bg-card border border-border rounded-xl">
-          <div className="border-b border-border pb-4 mb-6">
+          <div>
             <span className="text-xs font-bold uppercase tracking-wider text-primary flex items-center">
               <Headphones className="w-4 h-4 mr-1.5" />
               Research Experiment Overview
@@ -95,20 +89,6 @@ export default function Page1InstructionsConsent() {
                 <span>Estimated completion time: <strong>{EXPERIMENT_CONFIG.estimatedTime}</strong></span>
               </div>
             )}
-          </div>
-
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-5">
-            <h3 className="text-sm font-semibold text-main flex items-center mb-3">
-              <Info className="w-4 h-4 text-primary mr-2" />
-              Participant Instructions
-            </h3>
-            <ul className="space-y-2 text-sm text-secondary leading-relaxed list-disc list-inside">
-              {EXPERIMENT_CONFIG.participantInstructions.map((inst, idx) => (
-                <li key={idx} className="pl-1">
-                  <span className="text-main">{inst}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
 
@@ -255,40 +235,6 @@ export default function Page1InstructionsConsent() {
               <span>6 - Very proficient</span>
             </div>
           </div>
-        </div>
-
-        {/* Section C: Informed Consent */}
-        <div className="academic-card p-6 sm:p-8 bg-card border border-border rounded-xl">
-          <div className="border-b border-border pb-3 mb-6">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              Section C &bull; Informed Consent
-            </span>
-            <h2 className="text-lg font-bold text-main mt-1">
-              Consent Declaration
-            </h2>
-          </div>
-
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm text-secondary leading-relaxed mb-6 font-mono text-xs">
-            {EXPERIMENT_CONFIG.consent.statement}
-          </div>
-
-          {/* Mandatory Checkbox */}
-          <label 
-            htmlFor="consent-checkbox"
-            className="flex items-start space-x-3 cursor-pointer p-4 rounded-lg border border-border hover:bg-slate-50 transition-colors"
-          >
-            <input
-              id="consent-checkbox"
-              type="checkbox"
-              checked={consentChecked}
-              onChange={(e) => setConsentChecked(e.target.checked)}
-              className="w-5 h-5 mt-0.5 rounded border-border text-primary focus:ring-primary/30"
-              required
-            />
-            <span className="text-sm font-medium text-main select-none leading-snug">
-              {EXPERIMENT_CONFIG.consent.checkboxLabel}
-            </span>
-          </label>
         </div>
 
         {/* Error Alert */}

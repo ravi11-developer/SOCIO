@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS participants (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Ensure columns exist if table was previously created
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS first_language VARCHAR(128);
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS second_language VARCHAR(128);
+ALTER TABLE participants ADD COLUMN IF NOT EXISTS hindi_proficiency INT CHECK (hindi_proficiency BETWEEN 1 AND 6);
+
 CREATE INDEX IF NOT EXISTS idx_participants_session_token ON participants(session_token);
 CREATE INDEX IF NOT EXISTS idx_participants_participant_id ON participants(participant_id);
 
@@ -57,6 +62,10 @@ CREATE TABLE IF NOT EXISTS questions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT unique_recording_question UNIQUE(recording_number, question_number)
 );
+
+-- Ensure columns exist if table was previously created
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_key VARCHAR(64);
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS question_type VARCHAR(32) DEFAULT 'scale';
 
 CREATE INDEX IF NOT EXISTS idx_questions_recording ON questions(recording_number);
 
@@ -122,21 +131,27 @@ ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE experiment_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow public read access to recordings" ON recordings;
 CREATE POLICY "Allow public read access to recordings" ON recordings
     FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Allow public read access to questions" ON questions;
 CREATE POLICY "Allow public read access to questions" ON questions
     FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Service role full access to participants" ON participants;
 CREATE POLICY "Service role full access to participants" ON participants
     FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role full access to consent" ON consent;
 CREATE POLICY "Service role full access to consent" ON consent
     FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role full access to responses" ON responses;
 CREATE POLICY "Service role full access to responses" ON responses
     FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service role full access to experiment_sessions" ON experiment_sessions;
 CREATE POLICY "Service role full access to experiment_sessions" ON experiment_sessions
     FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -591,6 +606,8 @@ $$;
 -- ==============================================================================
 
 -- A. Wide CSV Export View (1 Row Per Participant, Enriched with Demographics, Audio Metadata & 12 Traits)
+DROP VIEW IF EXISTS researcher_responses_long_view CASCADE;
+DROP VIEW IF EXISTS researcher_export_view CASCADE;
 CREATE OR REPLACE VIEW researcher_export_view AS
 SELECT 
     p.participant_id AS "Participant ID",

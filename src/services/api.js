@@ -283,7 +283,7 @@ export const api = {
   },
 
   /**
-   * Resolves audio URL from Supabase storage bucket 'audio-files' or fallback
+   * Resolves audio URL from Supabase storage bucket 'audio_files' or fallback
    */
   getAudioUrl(storagePath, fallbackUrl) {
     const safeFallback = fallbackUrl || '/audio/sample_audio.mp3';
@@ -294,7 +294,11 @@ export const api = {
       return storagePath;
     }
     if (isSupabaseConfigured && supabase) {
-      const { data } = supabase.storage.from('audio-files').getPublicUrl(storagePath);
+      let path = storagePath;
+      if (!path.endsWith('.mpeg') && !path.endsWith('.mp3')) {
+        path = `${path}.mp3.mpeg`;
+      }
+      const { data } = supabase.storage.from('audio_files').getPublicUrl(path);
       return data?.publicUrl || safeFallback;
     }
     return safeFallback;

@@ -43,12 +43,6 @@ export default function Header() {
             </div>
           )}
 
-          {/* Participant ID Badge */}
-          {participantId && (
-            <div className="bg-slate-100 text-secondary border border-border px-2.5 py-1 rounded-md font-mono text-xs font-medium">
-              ID: <span className="text-main font-semibold">{participantId}</span>
-            </div>
-          )}
         </div>
       </div>
     </header>

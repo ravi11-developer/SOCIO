@@ -10,7 +10,7 @@ function renderWithContext(ui) {
 }
 
 describe('Sociolinguistic Validation & Page 1 Form', () => {
-  it('1. Requires gender, ethnicity, first & second language, hindi proficiency, and consent to enable Start', async () => {
+  it('1. Requires gender, ethnicity, first & second language, and hindi proficiency to enable Start', async () => {
     await act(async () => {
       renderWithContext(<Page1InstructionsConsent />);
     });
@@ -28,10 +28,10 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     });
     expect(startBtn).toBeDisabled();
 
-    // Fill Ethnicity
+    // Fill Ethnicity with North Indian
     const ethnicitySelect = screen.getByLabelText(/^ethnicity/i);
     await act(async () => {
-      fireEvent.change(ethnicitySelect, { target: { value: 'south_asian' } });
+      fireEvent.change(ethnicitySelect, { target: { value: 'north_indian' } });
     });
     expect(startBtn).toBeDisabled();
 
@@ -54,19 +54,12 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     await act(async () => {
       fireEvent.click(profBtn5);
     });
-    expect(startBtn).toBeDisabled();
 
-    // Check consent checkbox
-    const consentCheck = screen.getByRole('checkbox');
-    await act(async () => {
-      fireEvent.click(consentCheck);
-    });
-
-    // Now all requirements are satisfied
+    // Now all requirements are satisfied (consent is automatic)
     expect(startBtn).not.toBeDisabled();
   });
 
-  it('2. QuestionList displays answered count (13 total) and blocks until all 12 traits and comment are complete', async () => {
+  it('2. QuestionList blocks until all 12 traits and comment are complete', async () => {
     const onSubmitMock = vi.fn();
 
     await act(async () => {
@@ -79,8 +72,6 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
         />
       );
     });
-
-    expect(screen.getByText('0 of 13 answered')).toBeInTheDocument();
 
     const submitBtn = screen.getByTestId('question-submit-button');
     await act(async () => {
@@ -96,8 +87,6 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
       fireEvent.click(trait1Score5);
     });
 
-    expect(screen.getByText('1 of 13 answered')).toBeInTheDocument();
-
     // Rate remaining 11 traits (traits 2 to 12)
     for (let traitNum = 2; traitNum <= 12; traitNum++) {
       const btn = screen.getByTestId(`rating-${traitNum}-4`);
@@ -105,8 +94,6 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
         fireEvent.click(btn);
       });
     }
-
-    expect(screen.getByText('12 of 13 answered')).toBeInTheDocument();
 
     // Attempt submit without candid comment
     await act(async () => {
@@ -119,8 +106,6 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     await act(async () => {
       fireEvent.change(commentInput, { target: { value: 'The speaker sounds very confident, engaging, and articulate.' } });
     });
-
-    expect(screen.getByText('13 of 13 answered')).toBeInTheDocument();
 
     // Submit now succeeds
     await act(async () => {

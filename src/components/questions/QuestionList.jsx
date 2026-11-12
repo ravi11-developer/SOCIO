@@ -94,25 +94,11 @@ export default function QuestionList({
     <form onSubmit={handleSubmit} className="w-full space-y-6">
       {/* Questionnaire Header Card */}
       <div className="academic-card p-6 sm:p-8 bg-card border border-border rounded-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
-          <div>
-            <h2 className="text-xl font-bold text-main">{title}</h2>
-            {description && (
-              <p className="text-sm text-secondary mt-1">{description}</p>
-            )}
-          </div>
-
-          {/* Progress Indicator */}
-          <div className="flex items-center space-x-2 self-start sm:self-center px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 shrink-0">
-            {isAllAnswered ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-            )}
-            <span className="text-xs font-semibold text-main">
-              {answeredCount} of {totalItems} answered
-            </span>
-          </div>
+        <div className="pb-4 border-b border-border">
+          <h2 className="text-xl font-bold text-main">{title}</h2>
+          {description && (
+            <p className="text-sm text-secondary mt-1">{description}</p>
+          )}
         </div>
 
         {/* Validation Warning Alert */}
@@ -122,7 +108,7 @@ export default function QuestionList({
             <div>
               <p className="font-medium">Incomplete Evaluation</p>
               <p className="text-xs text-red-700 mt-1">
-                Please complete all {Object.keys(validationErrors).length} remaining trait ratings and comments before continuing.
+                Please complete all remaining trait ratings and comments before continuing.
               </p>
             </div>
           </div>
@@ -151,9 +137,6 @@ export default function QuestionList({
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                     <div>
-                      <span className="text-xs font-bold text-primary mr-2 uppercase tracking-wide">
-                        Trait {trait.number} of 12
-                      </span>
                       <h3 className="font-bold text-base text-main inline">
                         {trait.name}
                       </h3>

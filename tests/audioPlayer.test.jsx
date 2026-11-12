@@ -50,7 +50,7 @@ describe('RestrictedAudioPlayer Component', () => {
     expect(continueBtn).toBeDisabled();
   });
 
-  it('3. Enables continue button and displays completion banner upon ended event', () => {
+  it('3. Enables continue button upon ended event', () => {
     const onContinueMock = vi.fn();
     const { container } = renderWithContext(
       <RestrictedAudioPlayer
@@ -58,7 +58,6 @@ describe('RestrictedAudioPlayer Component', () => {
         title="Audio Recording 1"
         storagePath="sample.mp3"
         fallbackSampleUrl="https://example.com/audio.mp3"
-        completionNotice="Audio completed. You may now continue."
         onContinue={onContinueMock}
       />
     );
@@ -70,11 +69,6 @@ describe('RestrictedAudioPlayer Component', () => {
     act(() => {
       fireEvent.ended(audioElement);
     });
-
-    // Verification
-    expect(screen.getByTestId('audio-completed-notice')).toHaveTextContent(
-      'Audio completed. You may now continue.'
-    );
 
     const continueBtn = screen.getByTestId('audio-continue-button');
     expect(continueBtn).not.toBeDisabled();

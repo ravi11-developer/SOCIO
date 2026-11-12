@@ -10,7 +10,7 @@
 
 export const EXPERIMENT_CONFIG = {
   // --- Page 1: General Info & Instructions ---
-  title: "Audio Perception Research Study",
+  title: "Language Attitude Study",
   instructionHeadline: "Listen to the audio and answer the questions",
   description: "Thank you for participating in this research study. In this experiment, you will listen to two short audio recordings and share your impressions of the speakers.",
   estimatedTime: "Approximately 8-10 minutes",
@@ -39,13 +39,14 @@ export const EXPERIMENT_CONFIG = {
       label: "Ethnicity",
       required: true,
       options: [
-        { value: "south_asian", label: "South Asian / Indian" },
+        { value: "north_indian", label: "North Indian" },
+        { value: "south_indian", label: "South Indian" },
+        { value: "east_indian", label: "East Indian" },
+        { value: "west_indian", label: "West Indian" },
+        { value: "northeast_indian", label: "Northeast Indian" },
+        { value: "central_indian", label: "Central Indian" },
+        { value: "mixed_indian", label: "Mixed Indian heritage" },
         { value: "east_asian", label: "East Asian" },
-        { value: "middle_eastern", label: "Middle Eastern" },
-        { value: "caucasian", label: "Caucasian / White" },
-        { value: "black_african", label: "Black / African" },
-        { value: "hispanic_latino", label: "Hispanic / Latino" },
-        { value: "multiracial", label: "Mixed / Multiracial" },
         { value: "other", label: "Other" },
         { value: "prefer_not_to_say", label: "Prefer not to say" }
       ]
@@ -88,11 +89,11 @@ export const EXPERIMENT_CONFIG = {
   blindedAudioLabels: {
     audio1: {
       title: "Audio Recording 1",
-      description: "Please listen carefully to the speaker from beginning to end. You will be asked to evaluate several personality and social traits of the speaker immediately after listening."
+      description: "Please listen to the recording in full."
     },
     audio2: {
       title: "Audio Recording 2",
-      description: "Please listen carefully to the second speaker from beginning to end. You will evaluate the speaker on the same set of traits immediately after listening."
+      description: "Please listen to the recording in full."
     }
   },
 
