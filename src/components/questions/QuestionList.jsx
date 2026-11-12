@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useExperiment } from '../../context/ExperimentContext';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { EXPERIMENT_CONFIG } from '../../config/experiment';
+import { CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 
 export default function QuestionList({
   title,
   description,
-  questions = [],
+  recordingNumber = 1,
   actionButtonLabel = 'Continue',
   onSubmitAction,
   isLoading = false,
@@ -14,27 +15,47 @@ export default function QuestionList({
   const [validationErrors, setValidationErrors] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  // Calculate answered count
-  const answeredCount = questions.filter(
-    (q) => responses[q.id] && responses[q.id].trim().length > 0
+  const prefix = `q${recordingNumber}_`;
+  const traits = EXPERIMENT_CONFIG.traits;
+  const commentKey = `${prefix}comment`;
+
+  // Count answered traits (1 to 12)
+  const answeredTraitsCount = traits.filter(
+    (t) => responses[`${prefix}${t.number}`] !== undefined && responses[`${prefix}${t.number}`] !== ''
   ).length;
 
-  const totalQuestions = questions.length;
-  const isAllAnswered = answeredCount === totalQuestions;
+  // Check if comment is answered
+  const isCommentAnswered = responses[commentKey] && responses[commentKey].trim().length > 0;
+  
+  const totalItems = traits.length + 1; // 12 traits + 1 comment = 13
+  const answeredCount = answeredTraitsCount + (isCommentAnswered ? 1 : 0);
+  const isAllAnswered = answeredCount === totalItems;
 
-  const handleTextChange = (questionId, value) => {
-    updateResponse(questionId, value);
-    if (validationErrors[questionId] && value.trim().length > 0) {
+  const handleRatingSelect = (traitNumber, score) => {
+    const key = `${prefix}${traitNumber}`;
+    updateResponse(key, score);
+    if (validationErrors[key]) {
       setValidationErrors((prev) => {
         const next = { ...prev };
-        delete next[questionId];
+        delete next[key];
         return next;
       });
     }
   };
 
-  const handleBlur = (questionId, value) => {
-    flushResponseSave(questionId, value);
+  const handleCommentChange = (value) => {
+    updateResponse(commentKey, value);
+    if (validationErrors[commentKey] && value.trim().length > 0) {
+      setValidationErrors((prev) => {
+        const next = { ...prev };
+        delete next[commentKey];
+        return next;
+      });
+    }
+  };
+
+  const handleCommentBlur = (value) => {
+    flushResponseSave(commentKey, value);
   };
 
   const handleSubmit = (e) => {
@@ -42,17 +63,21 @@ export default function QuestionList({
     setAttemptedSubmit(true);
 
     const errors = {};
-    questions.forEach((q) => {
-      if (q.required && (!responses[q.id] || responses[q.id].trim() === '')) {
-        errors[q.id] = 'This question is required.';
+    traits.forEach((t) => {
+      const key = `${prefix}${t.number}`;
+      if (responses[key] === undefined || responses[key] === null || responses[key] === '') {
+        errors[key] = `Please rate the speaker's ${t.name.toLowerCase()} (1 to 6).`;
       }
     });
 
+    if (!responses[commentKey] || responses[commentKey].trim() === '') {
+      errors[commentKey] = 'Please provide your candid thoughts and opinions about the speaker.';
+    }
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      // Scroll to first invalid question
       const firstErrorId = Object.keys(errors)[0];
-      const el = document.getElementById(`question-card-${firstErrorId}`);
+      const el = document.getElementById(`item-card-${firstErrorId}`);
       if (el && typeof el.scrollIntoView === 'function') {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -77,15 +102,15 @@ export default function QuestionList({
             )}
           </div>
 
-          {/* Answered Progress Pill */}
-          <div className="flex items-center space-x-2 self-start sm:self-center px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200">
+          {/* Progress Indicator */}
+          <div className="flex items-center space-x-2 self-start sm:self-center px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 shrink-0">
             {isAllAnswered ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             ) : (
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
             )}
             <span className="text-xs font-semibold text-main">
-              {answeredCount} of {totalQuestions} answered
+              {answeredCount} of {totalItems} answered
             </span>
           </div>
         </div>
@@ -95,88 +120,161 @@ export default function QuestionList({
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3 text-red-800 text-sm">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium">Incomplete Questionnaire</p>
+              <p className="font-medium">Incomplete Evaluation</p>
               <p className="text-xs text-red-700 mt-1">
-                Please provide an answer for all {Object.keys(validationErrors).length} remaining required questions.
+                Please complete all {Object.keys(validationErrors).length} remaining trait ratings and comments before continuing.
               </p>
             </div>
           </div>
         )}
 
-        {/* Questions List */}
-        <div className="divide-y divide-border mt-2">
-          {questions.map((q) => {
-            const hasError = Boolean(validationErrors[q.id]);
-            const currentAnswer = responses[q.id] || '';
+        {/* Part A: 12 Trait Rating Scales (1 to 6) */}
+        <div className="mt-6 space-y-5">
+          <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg flex justify-between items-center text-xs text-secondary font-medium">
+            <span>Rate each trait on a scale from <strong>1 to 6</strong>:</span>
+            <span><strong>1</strong> = Least &bull; <strong>6</strong> = Most</span>
+          </div>
 
-            return (
-              <div
-                key={q.id}
-                id={`question-card-${q.id}`}
-                className={`py-6 first:pt-4 last:pb-2 transition-colors ${
-                  hasError ? 'bg-red-50/50 p-4 rounded-lg my-2' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <label
-                    htmlFor={`input-${q.id}`}
-                    className="font-semibold text-sm sm:text-base text-main leading-snug"
-                  >
-                    <span className="text-primary font-bold mr-1.5">
-                      Q{q.number}.
-                    </span>
-                    {q.text}
-                    {q.required && (
-                      <span className="text-red-500 ml-1" title="Required">
-                        *
+          <div className="divide-y divide-border">
+            {traits.map((trait) => {
+              const itemKey = `${prefix}${trait.number}`;
+              const currentRating = responses[itemKey] !== undefined ? Number(responses[itemKey]) : null;
+              const hasError = Boolean(validationErrors[itemKey]);
+
+              return (
+                <div
+                  key={itemKey}
+                  id={`item-card-${itemKey}`}
+                  className={`py-5 transition-colors ${
+                    hasError ? 'bg-red-50/50 p-4 rounded-lg my-2' : ''
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <div>
+                      <span className="text-xs font-bold text-primary mr-2 uppercase tracking-wide">
+                        Trait {trait.number} of 12
+                      </span>
+                      <h3 className="font-bold text-base text-main inline">
+                        {trait.name}
+                      </h3>
+                      <span className="text-red-500 ml-1" title="Required">*</span>
+                      <p className="text-xs text-secondary mt-0.5">{trait.prompt}</p>
+                    </div>
+
+                    {currentRating !== null && (
+                      <span className="text-xs text-emerald-600 font-semibold flex items-center shrink-0 self-start sm:self-auto">
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        Rated: {currentRating} / 6
                       </span>
                     )}
-                  </label>
-                  {currentAnswer.trim().length > 0 && (
-                    <span className="text-xs text-emerald-600 font-medium flex items-center shrink-0">
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Answered
-                    </span>
+                  </div>
+
+                  {/* 1 to 6 Rating Scale Pill Buttons */}
+                  <div 
+                    className="grid grid-cols-6 gap-2 sm:gap-3 max-w-lg"
+                    role="radiogroup"
+                    aria-label={`Rate ${trait.name} from 1 (least) to 6 (most)`}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((score) => {
+                      const isSelected = currentRating === score;
+                      return (
+                        <button
+                          key={score}
+                          type="button"
+                          onClick={() => handleRatingSelect(trait.number, score)}
+                          className={`py-2.5 sm:py-3 rounded-lg font-bold text-sm sm:text-base transition-all border text-center focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+                            isSelected
+                              ? 'bg-primary border-primary text-white shadow-sm ring-2 ring-primary/20 scale-102'
+                              : 'bg-white border-border text-main hover:bg-slate-100 hover:border-slate-300'
+                          }`}
+                          aria-checked={isSelected}
+                          role="radio"
+                          data-testid={`rating-${trait.number}-${score}`}
+                        >
+                          {score}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-between text-[11px] text-secondary mt-1 max-w-lg px-1">
+                    <span>1 (Least)</span>
+                    <span>6 (Most)</span>
+                  </div>
+
+                  {hasError && (
+                    <p className="text-xs text-red-600 mt-2 font-medium flex items-center">
+                      <AlertCircle className="w-3.5 h-3.5 mr-1 shrink-0" />
+                      {validationErrors[itemKey]}
+                    </p>
                   )}
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                {/* Multiline Textarea */}
-                <textarea
-                  id={`input-${q.id}`}
-                  rows={4}
-                  value={currentAnswer}
-                  onChange={(e) => handleTextChange(q.id, e.target.value)}
-                  onBlur={(e) => handleBlur(q.id, e.target.value)}
-                  placeholder={q.placeholder || 'Write your answer here...'}
-                  className={`w-full p-3.5 text-sm sm:text-base rounded-lg border transition-all resize-y focus:outline-none focus:ring-2 ${
-                    hasError
-                      ? 'border-red-400 bg-white focus:ring-red-300'
-                      : 'border-border bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-primary/20'
-                  }`}
-                  aria-invalid={hasError}
-                  aria-describedby={hasError ? `error-${q.id}` : undefined}
-                />
+        {/* Part B: Candid Open Opinion Comment Box */}
+        <div 
+          id={`item-card-${commentKey}`}
+          className={`mt-8 pt-6 border-t-2 border-slate-200 transition-colors ${
+            validationErrors[commentKey] ? 'bg-red-50/50 p-4 rounded-lg' : ''
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <span className="text-xs font-bold text-primary mr-2 uppercase tracking-wide flex items-center">
+                <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                Open Feedback
+              </span>
+              <label
+                htmlFor={`comment-input-${recordingNumber}`}
+                className="font-bold text-base text-main block mt-1"
+              >
+                {EXPERIMENT_CONFIG.openOpinionPrompt.prompt}
+                <span className="text-red-500 ml-1" title="Required">*</span>
+              </label>
+              <p className="text-xs text-secondary mt-0.5">
+                Share any impressions, thoughts on background, accent, demeanor, or trustworthiness.
+              </p>
+            </div>
 
-                {/* Error message */}
-                {hasError && (
-                  <p
-                    id={`error-${q.id}`}
-                    className="text-xs text-red-600 mt-1.5 font-medium flex items-center"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 mr-1" />
-                    {validationErrors[q.id]}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+            {isCommentAnswered && (
+              <span className="text-xs text-emerald-600 font-semibold flex items-center shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                Completed
+              </span>
+            )}
+          </div>
+
+          <textarea
+            id={`comment-input-${recordingNumber}`}
+            rows={4}
+            value={responses[commentKey] || ''}
+            onChange={(e) => handleCommentChange(e.target.value)}
+            onBlur={(e) => handleCommentBlur(e.target.value)}
+            placeholder={EXPERIMENT_CONFIG.openOpinionPrompt.placeholder}
+            className={`w-full p-3.5 text-sm sm:text-base rounded-lg border transition-all resize-y focus:outline-none focus:ring-2 ${
+              validationErrors[commentKey]
+                ? 'border-red-400 bg-white focus:ring-red-300'
+                : 'border-border bg-slate-50/50 focus:bg-white focus:border-primary focus:ring-primary/20'
+            }`}
+            aria-invalid={Boolean(validationErrors[commentKey])}
+          />
+
+          {validationErrors[commentKey] && (
+            <p className="text-xs text-red-600 mt-1.5 font-medium flex items-center">
+              <AlertCircle className="w-3.5 h-3.5 mr-1 shrink-0" />
+              {validationErrors[commentKey]}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Action / Next Button */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
         <p className="text-xs text-secondary italic text-center sm:text-left">
-          Responses are autosaved continuously.
+          Ratings and opinions are autosaved automatically.
         </p>
         <button
           type="submit"

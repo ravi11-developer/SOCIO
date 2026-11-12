@@ -2,7 +2,7 @@ import React from 'react';
 import { EXPERIMENT_CONFIG } from '../../config/experiment';
 import { useExperiment } from '../../context/ExperimentContext';
 import QuestionList from '../questions/QuestionList';
-import { CheckCircle2, Award, ShieldCheck, Lock } from 'lucide-react';
+import { CheckCircle2, Lock } from 'lucide-react';
 
 export default function Page5Questions2() {
   const { isSubmitted, participantId, submitFinalExperiment, loading } = useExperiment();
@@ -46,10 +46,10 @@ export default function Page5Questions2() {
   return (
     <div className="w-full">
       <QuestionList
-        title={EXPERIMENT_CONFIG.questionsAudio2.title}
-        description={EXPERIMENT_CONFIG.questionsAudio2.description}
-        questions={EXPERIMENT_CONFIG.questionsAudio2.questions}
-        actionButtonLabel={EXPERIMENT_CONFIG.questionsAudio2.submitButtonLabel}
+        recordingNumber={2}
+        title={EXPERIMENT_CONFIG.questionnaireAudio2.title}
+        description={EXPERIMENT_CONFIG.questionnaireAudio2.description}
+        actionButtonLabel={EXPERIMENT_CONFIG.questionnaireAudio2.submitButtonLabel}
         onSubmitAction={submitFinalExperiment}
         isLoading={loading}
       />

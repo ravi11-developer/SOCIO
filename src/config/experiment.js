@@ -1,23 +1,26 @@
 /**
  * Centralized Experiment Configuration
  * 
- * Includes the 10-Audio Library catalog:
- * - 6 Pure Audios (3 Male, 3 Female: Pure Hindi, Pure English, Pure Bombay Hindi)
- * - 4 Code-Mixed Audios (2 Male, 2 Female: Code-Mixed Hindi, Code-Mixed Bombay English)
+ * Sociolinguistic Audio Perception Study:
+ * - 10-Audio Library catalog (Pure & Code-Mixed varieties, Male & Female speakers)
+ * - Blinded Audio Evaluation (Participants are not told language variety or gender)
+ * - 12 Personality & Social Traits (1-6 Likert scale: 1 = Least, 6 = Most)
+ * - Candid open-ended opinion commentary
  */
 
 export const EXPERIMENT_CONFIG = {
   // --- Page 1: General Info & Instructions ---
-  title: "[PLACEHOLDER: INSERT EXPERIMENT TITLE]",
-  description: "[PLACEHOLDER: INSERT RESEARCH DESCRIPTION]",
-  estimatedTime: "[PLACEHOLDER: INSERT ESTIMATED COMPLETION TIME]",
+  title: "Audio Perception Research Study",
+  instructionHeadline: "Listen to the audio and answer the questions",
+  description: "Thank you for participating in this research study. In this experiment, you will listen to two short audio recordings and share your impressions of the speakers.",
+  estimatedTime: "Approximately 8-10 minutes",
   participantInstructions: [
+    "Listen to the audio and answer the questions.",
     "You will listen to two separate audio recordings in sequence.",
-    "Each recording must be played completely from start to finish before you can proceed.",
-    "You will answer 10 questions immediately after each audio recording (20 questions total).",
-    "Please answer honestly based on your own direct observations and perceptions.",
-    "There are no right or wrong answers unless specified by the researcher.",
-    "Please do not refresh or close your browser during the experiment."
+    "Each recording must be played completely from start to finish before questions are unlocked.",
+    "Answer honestly based on your own natural impressions and observations.",
+    "There are no right or wrong answers.",
+    "Please do not refresh or navigate away from the browser during the study."
   ],
 
   // --- Page 1: Demographics Configuration ---
@@ -36,34 +39,73 @@ export const EXPERIMENT_CONFIG = {
       label: "Ethnicity",
       required: true,
       options: [
-        { value: "option_placeholder_1", label: "[PLACEHOLDER: INSERT RESEARCH-APPROPRIATE OPTIONS - Option A]" },
-        { value: "option_placeholder_2", label: "[PLACEHOLDER: INSERT RESEARCH-APPROPRIATE OPTIONS - Option B]" },
-        { value: "option_placeholder_3", label: "[PLACEHOLDER: INSERT RESEARCH-APPROPRIATE OPTIONS - Option C]" },
+        { value: "south_asian", label: "South Asian / Indian" },
+        { value: "east_asian", label: "East Asian" },
+        { value: "middle_eastern", label: "Middle Eastern" },
+        { value: "caucasian", label: "Caucasian / White" },
+        { value: "black_african", label: "Black / African" },
+        { value: "hispanic_latino", label: "Hispanic / Latino" },
+        { value: "multiracial", label: "Mixed / Multiracial" },
         { value: "other", label: "Other" },
         { value: "prefer_not_to_say", label: "Prefer not to say" }
+      ]
+    },
+    firstLanguage: {
+      label: "First Language (Mother Tongue / L1)",
+      placeholder: "e.g., Hindi, English, Marathi, Gujarati, Bengali, etc.",
+      required: true
+    },
+    secondLanguage: {
+      label: "Second Language (L2)",
+      placeholder: "e.g., English, Hindi, Punjabi, none, etc.",
+      required: true
+    },
+    hindiProficiency: {
+      label: "Rate your proficiency in spoken Hindi",
+      required: true,
+      helperNote: "If you are a native speaker or are proficient in spoken Hindi then consider rating yourselves 4, 5 or 6.",
+      minLabel: "1 - Not proficient",
+      maxLabel: "6 - Very proficient",
+      choices: [
+        { value: 1, label: "1 (Not proficient)" },
+        { value: 2, label: "2" },
+        { value: 3, label: "3" },
+        { value: 4, label: "4" },
+        { value: 5, label: "5" },
+        { value: 6, label: "6 (Very proficient)" }
       ]
     }
   },
 
   // --- Page 1: Informed Consent ---
   consent: {
-    statement: "[PLACEHOLDER: INSERT COMPLETE INFORMED CONSENT TEXT]",
+    statement: "I understand that my participation in this research study is completely voluntary and anonymous. No personal identifying information such as my name, phone number, or email address will be collected. All response data will be stored securely and used solely for academic research purposes. I may withdraw from the study at any time prior to submission.",
     checkboxLabel: "I have read and understood the information above and voluntarily agree to participate in this study.",
     startButtonLabel: "Start Experiment"
   },
 
-  // --- Complete 10-Audio Library Catalog ---
+  // --- Blinded Audio Page Labels (Participants must NOT know the language or dialect in advance) ---
+  blindedAudioLabels: {
+    audio1: {
+      title: "Audio Recording 1",
+      description: "Please listen carefully to the speaker from beginning to end. You will be asked to evaluate several personality and social traits of the speaker immediately after listening."
+    },
+    audio2: {
+      title: "Audio Recording 2",
+      description: "Please listen carefully to the second speaker from beginning to end. You will evaluate the speaker on the same set of traits immediately after listening."
+    }
+  },
+
+  // --- Complete 10-Audio Library Catalog (Internal metadata tracked for researcher analysis) ---
   audioLibrary: [
-    // --- Pure Section (6 Audios: 3 Male, 3 Female) ---
     {
       id: 1,
       code: "pure_hindi_male",
       category: "pure",
       languageVariety: "Pure Hindi",
       speakerGender: "male",
-      title: "Audio Recording 1 (Pure Hindi - Male)",
-      description: "[PLACEHOLDER: INSERT PURE HINDI MALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_HINDI_MALE]",
+      title: "Audio Recording 1",
+      storagePath: "pure_hindi_male.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -73,9 +115,8 @@ export const EXPERIMENT_CONFIG = {
       category: "pure",
       languageVariety: "Pure Hindi",
       speakerGender: "female",
-      title: "Audio Recording (Pure Hindi - Female)",
-      description: "[PLACEHOLDER: INSERT PURE HINDI FEMALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_HINDI_FEMALE]",
+      title: "Audio Recording",
+      storagePath: "pure_hindi_female.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -85,9 +126,8 @@ export const EXPERIMENT_CONFIG = {
       category: "pure",
       languageVariety: "Pure English",
       speakerGender: "male",
-      title: "Audio Recording (Pure English - Male)",
-      description: "[PLACEHOLDER: INSERT PURE ENGLISH MALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_ENGLISH_MALE]",
+      title: "Audio Recording",
+      storagePath: "pure_english_male.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -97,9 +137,8 @@ export const EXPERIMENT_CONFIG = {
       category: "pure",
       languageVariety: "Pure English",
       speakerGender: "female",
-      title: "Audio Recording (Pure English - Female)",
-      description: "[PLACEHOLDER: INSERT PURE ENGLISH FEMALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_ENGLISH_FEMALE]",
+      title: "Audio Recording",
+      storagePath: "pure_english_female.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -109,9 +148,8 @@ export const EXPERIMENT_CONFIG = {
       category: "pure",
       languageVariety: "Pure Bombay Hindi",
       speakerGender: "male",
-      title: "Audio Recording (Pure Bombay Hindi - Male)",
-      description: "[PLACEHOLDER: INSERT PURE BOMBAY HINDI MALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_MALE]",
+      title: "Audio Recording",
+      storagePath: "pure_bombay_hindi_male.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -121,23 +159,19 @@ export const EXPERIMENT_CONFIG = {
       category: "pure",
       languageVariety: "Pure Bombay Hindi",
       speakerGender: "female",
-      title: "Audio Recording (Pure Bombay Hindi - Female)",
-      description: "[PLACEHOLDER: INSERT PURE BOMBAY HINDI FEMALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_FEMALE]",
+      title: "Audio Recording",
+      storagePath: "pure_bombay_hindi_female.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
-
-    // --- Code-Mixed Section (4 Audios: 2 Male, 2 Female) ---
     {
       id: 7,
       code: "codemixed_hindi_male",
       category: "code_mixed",
       languageVariety: "Code-Mixed Hindi",
       speakerGender: "male",
-      title: "Audio Recording (Code-Mixed Hindi - Male)",
-      description: "[PLACEHOLDER: INSERT CODE-MIXED HINDI MALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_MALE]",
+      title: "Audio Recording",
+      storagePath: "codemixed_hindi_male.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -147,9 +181,8 @@ export const EXPERIMENT_CONFIG = {
       category: "code_mixed",
       languageVariety: "Code-Mixed Hindi",
       speakerGender: "female",
-      title: "Audio Recording (Code-Mixed Hindi - Female)",
-      description: "[PLACEHOLDER: INSERT CODE-MIXED HINDI FEMALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_FEMALE]",
+      title: "Audio Recording",
+      storagePath: "codemixed_hindi_female.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -159,9 +192,8 @@ export const EXPERIMENT_CONFIG = {
       category: "code_mixed",
       languageVariety: "Code-Mixed Bombay English",
       speakerGender: "male",
-      title: "Audio Recording (Code-Mixed Bombay English - Male)",
-      description: "[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH MALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_MALE]",
+      title: "Audio Recording",
+      storagePath: "codemixed_bombay_english_male.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     },
@@ -171,9 +203,8 @@ export const EXPERIMENT_CONFIG = {
       category: "code_mixed",
       languageVariety: "Code-Mixed Bombay English",
       speakerGender: "female",
-      title: "Audio Recording (Code-Mixed Bombay English - Female)",
-      description: "[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH FEMALE AUDIO DESCRIPTION]",
-      storagePath: "[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_FEMALE]",
+      title: "Audio Recording",
+      storagePath: "codemixed_bombay_english_female.mp3",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
       durationSeconds: 60
     }
@@ -185,47 +216,48 @@ export const EXPERIMENT_CONFIG = {
     continueButtonLabel: "Continue to Questions"
   },
 
-  // --- Page 3: Questions for Audio Recording 1 ---
-  questionsAudio1: {
-    title: "Questions About First Audio Recording",
-    description: "Please answer the following questions based on the first audio recording you just heard.",
-    continueButtonLabel: "Continue to Second Audio",
-    questions: [
-      { id: "q1_1", number: 1, text: "[INSERT QUESTION 1]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_2", number: 2, text: "[INSERT QUESTION 2]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_3", number: 3, text: "[INSERT QUESTION 3]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_4", number: 4, text: "[INSERT QUESTION 4]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_5", number: 5, text: "[INSERT QUESTION 5]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_6", number: 6, text: "[INSERT QUESTION 6]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_7", number: 7, text: "[INSERT QUESTION 7]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_8", number: 8, text: "[INSERT QUESTION 8]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_9", number: 9, text: "[INSERT QUESTION 9]", required: true, placeholder: "Write your answer here..." },
-      { id: "q1_10", number: 10, text: "[INSERT QUESTION 10]", required: true, placeholder: "Write your answer here..." }
-    ]
+  // --- 12 Personality & Social Traits to Evaluate (Scale 1 to 6) ---
+  traits: [
+    { id: "leadership", number: 1, name: "Leadership", prompt: "How strong are the speaker's leadership qualities?" },
+    { id: "humor", number: 2, name: "Sense of Humor", prompt: "How good is the speaker's sense of humor?" },
+    { id: "intelligence", number: 3, name: "Intelligence", prompt: "How intelligent does the speaker sound?" },
+    { id: "religiousness", number: 4, name: "Religiousness", prompt: "How religious does the speaker seem?" },
+    { id: "confidence", number: 5, name: "Self-confidence", prompt: "How self-confident does the speaker sound?" },
+    { id: "dependability", number: 6, name: "Dependability", prompt: "How dependable / reliable is the speaker?" },
+    { id: "entertainingness", number: 7, name: "Entertainingness", prompt: "How entertaining is the speaker to listen to?" },
+    { id: "kindness", number: 8, name: "Kindness", prompt: "How kind and warm does the speaker sound?" },
+    { id: "ambition", number: 9, name: "Ambition", prompt: "How ambitious does the speaker seem?" },
+    { id: "sociability", number: 10, name: "Sociability", prompt: "How sociable and outgoing is the speaker?" },
+    { id: "character", number: 11, name: "Character", prompt: "How strong is the speaker's personal character / integrity?" },
+    { id: "likability", number: 12, name: "Likability", prompt: "How likable is the speaker overall?" }
+  ],
+
+  // --- Candid Open Opinion Prompt ---
+  openOpinionPrompt: {
+    id: "comment",
+    number: 13,
+    title: "Overall Opinions",
+    prompt: "List all your opinions about the speaker, be as candid as possible",
+    placeholder: "Write your candid thoughts, impressions, and opinions about the speaker here...",
+    required: true
   },
 
-  // --- Page 5: Questions for Audio Recording 2 & Submission ---
-  questionsAudio2: {
+  // --- Question Page Headers ---
+  questionnaireAudio1: {
+    title: "Questions About First Audio Recording",
+    description: "Rate the speaker on a scale from 1 (Least) to 6 (Most) for each trait below, then share your candid opinions.",
+    continueButtonLabel: "Continue to Second Audio"
+  },
+
+  questionnaireAudio2: {
     title: "Questions About Second Audio Recording",
-    description: "Please answer the following questions based on the second audio recording you just heard.",
-    submitButtonLabel: "Submit Experiment",
-    questions: [
-      { id: "q2_1", number: 1, text: "[INSERT QUESTION 1]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_2", number: 2, text: "[INSERT QUESTION 2]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_3", number: 3, text: "[INSERT QUESTION 3]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_4", number: 4, text: "[INSERT QUESTION 4]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_5", number: 5, text: "[INSERT QUESTION 5]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_6", number: 6, text: "[INSERT QUESTION 6]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_7", number: 7, text: "[INSERT QUESTION 7]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_8", number: 8, text: "[INSERT QUESTION 8]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_9", number: 9, text: "[INSERT QUESTION 9]", required: true, placeholder: "Write your answer here..." },
-      { id: "q2_10", number: 10, text: "[INSERT QUESTION 10]", required: true, placeholder: "Write your answer here..." }
-    ]
+    description: "Rate the second speaker on a scale from 1 (Least) to 6 (Most) for each trait below, then share your candid opinions.",
+    submitButtonLabel: "Submit Experiment"
   },
 
   // --- Completion Screen (Page 5) ---
   completion: {
     title: "Thank You for Participating!",
-    message: "[PLACEHOLDER: INSERT FINAL THANK-YOU MESSAGE]"
+    message: "Your responses have been successfully recorded. Thank you for contributing your valuable time and candid observations to this sociolinguistic research study."
   }
 };

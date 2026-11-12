@@ -1,6 +1,6 @@
 -- ==============================================================================
--- Schema Migration: Audio-Based Research Questionnaire Website
--- Includes 10-Audio Library, Balanced Stratified Allocation, and Metadata Tracking
+-- Schema Migration: Sociolinguistic Audio Perception Experiment
+-- Includes 10-Audio Matrix, Extended Demographics, 12 Likert Traits & Candid Opinions
 -- ==============================================================================
 
 -- 1. Create Participants Table
@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS participants (
     session_token UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     gender VARCHAR(64),
     ethnicity VARCHAR(128),
+    first_language VARCHAR(128),
+    second_language VARCHAR(128),
+    hindi_proficiency INT CHECK (hindi_proficiency BETWEEN 1 AND 6),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -41,14 +44,16 @@ CREATE TABLE IF NOT EXISTS recordings (
 
 CREATE INDEX IF NOT EXISTS idx_recordings_category_gender ON recordings(category, speaker_gender);
 
--- 4. Create Questions Table (10 Questions for slot 1, 10 Questions for slot 2)
+-- 4. Create Questions Table (12 Traits + 1 Candid Comment per Recording)
 CREATE TABLE IF NOT EXISTS questions (
-    id VARCHAR(32) PRIMARY KEY, -- e.g. 'q1_1' to 'q1_10', 'q2_1' to 'q2_10'
+    id VARCHAR(32) PRIMARY KEY, -- e.g. 'q1_1' to 'q1_12', 'q1_comment', 'q2_1' to 'q2_12', 'q2_comment'
     recording_number INT NOT NULL CHECK (recording_number IN (1, 2)),
-    question_number INT NOT NULL CHECK (question_number BETWEEN 1 AND 10),
+    question_number INT NOT NULL CHECK (question_number BETWEEN 1 AND 13),
+    question_key VARCHAR(64) NOT NULL, -- e.g. 'leadership', 'humor', ..., 'comment'
     question_text TEXT NOT NULL,
+    question_type VARCHAR(32) NOT NULL DEFAULT 'scale', -- 'scale' (1-6) or 'comment'
     is_required BOOLEAN NOT NULL DEFAULT true,
-    placeholder TEXT DEFAULT 'Write your answer here...',
+    placeholder TEXT DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT unique_recording_question UNIQUE(recording_number, question_number)
 );
@@ -193,6 +198,9 @@ BEGIN
                 'session_token', v_participant.session_token,
                 'gender', v_participant.gender,
                 'ethnicity', v_participant.ethnicity,
+                'first_language', v_participant.first_language,
+                'second_language', v_participant.second_language,
+                'hindi_proficiency', v_participant.hindi_proficiency,
                 'current_stage', v_session.current_stage,
                 'audio_1_completed', v_session.audio_1_completed_at IS NOT NULL,
                 'audio_2_completed', v_session.audio_2_completed_at IS NOT NULL,
@@ -206,7 +214,6 @@ BEGIN
     END IF;
 
     -- 2. New Participant Session: Balanced Stratified Allocation
-    -- Select the least-allocated 'pure' audio
     SELECT r.id, r.speaker_gender
     INTO v_pure_id, v_pure_gender
     FROM recordings r
@@ -220,7 +227,6 @@ BEGIN
     ORDER BY COUNT(alloc.rec_id) ASC, random()
     LIMIT 1;
 
-    -- Select the least-allocated 'code_mixed' audio (balancing speaker gender when possible)
     SELECT r.id
     INTO v_codemixed_id
     FROM recordings r
@@ -232,26 +238,22 @@ BEGIN
     WHERE r.category = 'code_mixed'
     GROUP BY r.id, r.speaker_gender
     ORDER BY 
-        -- Give preference to the opposite gender if possible to maximize participant variety
         (CASE WHEN r.speaker_gender != v_pure_gender THEN 0 ELSE 1 END) ASC,
         COUNT(alloc.rec_id) ASC, 
         random()
     LIMIT 1;
 
-    -- Counterbalance presentation order: 50% pure first, 50% code-mixed first
     IF random() < 0.5 THEN
         v_order := 'pure_first';
     ELSE
         v_order := 'codemixed_first';
     END IF;
 
-    -- Create participant
     v_new_code := generate_participant_code();
     INSERT INTO participants (participant_id, session_token)
     VALUES (v_new_code, gen_random_uuid())
     RETURNING * INTO v_participant;
 
-    -- Assign to Slot 1 and Slot 2 based on presentation order
     IF v_order = 'pure_first' THEN
         INSERT INTO experiment_sessions (
             participant_id, current_stage, audio_1_recording_id, audio_2_recording_id, presentation_order
@@ -275,6 +277,9 @@ BEGIN
         'session_token', v_participant.session_token,
         'gender', NULL,
         'ethnicity', NULL,
+        'first_language', NULL,
+        'second_language', NULL,
+        'hindi_proficiency', NULL,
         'current_stage', 'consent_pending',
         'audio_1_completed', false,
         'audio_2_completed', false,
@@ -287,11 +292,14 @@ BEGIN
 END;
 $$;
 
--- Submit Consent and Demographics
+-- Submit Consent and Extended Demographics
 CREATE OR REPLACE FUNCTION rpc_submit_consent_and_demographics(
     p_session_token UUID,
     p_gender TEXT,
     p_ethnicity TEXT,
+    p_first_language TEXT,
+    p_second_language TEXT,
+    p_hindi_proficiency INT,
     p_consent BOOLEAN
 )
 RETURNS JSONB
@@ -306,6 +314,10 @@ BEGIN
         RAISE EXCEPTION 'Informed consent is mandatory to proceed.';
     END IF;
 
+    IF p_hindi_proficiency < 1 OR p_hindi_proficiency > 6 THEN
+        RAISE EXCEPTION 'Hindi proficiency must be rated between 1 and 6.';
+    END IF;
+
     SELECT * INTO v_participant FROM participants WHERE session_token = p_session_token;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Invalid session token.';
@@ -318,7 +330,11 @@ BEGIN
     END IF;
 
     UPDATE participants
-    SET gender = p_gender, ethnicity = p_ethnicity
+    SET gender = p_gender,
+        ethnicity = p_ethnicity,
+        first_language = p_first_language,
+        second_language = p_second_language,
+        hindi_proficiency = p_hindi_proficiency
     WHERE id = v_participant.id;
 
     INSERT INTO consent (participant_id, consent_status, consent_timestamp)
@@ -446,7 +462,6 @@ BEGIN
         RAISE EXCEPTION 'Responses cannot be modified after final submission.';
     END IF;
 
-    -- Identify question and corresponding recording_id
     SELECT * INTO v_question FROM questions WHERE id = p_question_id;
     IF FOUND THEN
         IF v_question.recording_number = 1 THEN
@@ -456,7 +471,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- Upsert response
     INSERT INTO responses (participant_id, question_id, recording_id, answer, updated_at)
     VALUES (v_participant.id, p_question_id, v_recording_id, p_answer, now())
     ON CONFLICT (participant_id, question_id)
@@ -501,7 +515,7 @@ BEGIN
       AND (r.answer IS NULL OR trim(r.answer) = '');
 
     IF v_unanswered_count > 0 THEN
-        RAISE EXCEPTION 'Please answer all % required questions for Recording 1 before continuing.', v_unanswered_count;
+        RAISE EXCEPTION 'Please answer all % required items for Recording 1 before continuing.', v_unanswered_count;
     END IF;
 
     UPDATE experiment_sessions
@@ -553,7 +567,7 @@ BEGIN
       AND (r.answer IS NULL OR trim(r.answer) = '');
 
     IF v_unanswered_count > 0 THEN
-        RAISE EXCEPTION 'Please answer all % required questions for Recording 2 before final submission.', v_unanswered_count;
+        RAISE EXCEPTION 'Please answer all % required items for Recording 2 before final submission.', v_unanswered_count;
     END IF;
 
     UPDATE experiment_sessions
@@ -576,13 +590,16 @@ $$;
 -- 9. Researcher Views (Wide Format & Tidy Long Format)
 -- ==============================================================================
 
--- A. Wide CSV Export View (1 Row Per Participant, Enriched with Audio Metadata)
+-- A. Wide CSV Export View (1 Row Per Participant, Enriched with Demographics, Audio Metadata & 12 Traits)
 CREATE OR REPLACE VIEW researcher_export_view AS
 SELECT 
     p.participant_id AS "Participant ID",
     p.created_at AS "Created At",
     p.gender AS "Gender",
     p.ethnicity AS "Ethnicity",
+    p.first_language AS "First Language",
+    p.second_language AS "Second Language",
+    p.hindi_proficiency AS "Hindi Proficiency (1-6)",
     c.consent_status AS "Consent Granted",
     c.consent_timestamp AS "Consent Timestamp",
     s.presentation_order AS "Presentation Order",
@@ -607,29 +624,35 @@ SELECT
     s.session_status AS "Session Status",
     s.submitted_at AS "Submitted At",
 
-    -- Audio 1 Answers
-    MAX(CASE WHEN resp.question_id = 'q1_1' THEN resp.answer END) AS "A1_Q1",
-    MAX(CASE WHEN resp.question_id = 'q1_2' THEN resp.answer END) AS "A1_Q2",
-    MAX(CASE WHEN resp.question_id = 'q1_3' THEN resp.answer END) AS "A1_Q3",
-    MAX(CASE WHEN resp.question_id = 'q1_4' THEN resp.answer END) AS "A1_Q4",
-    MAX(CASE WHEN resp.question_id = 'q1_5' THEN resp.answer END) AS "A1_Q5",
-    MAX(CASE WHEN resp.question_id = 'q1_6' THEN resp.answer END) AS "A1_Q6",
-    MAX(CASE WHEN resp.question_id = 'q1_7' THEN resp.answer END) AS "A1_Q7",
-    MAX(CASE WHEN resp.question_id = 'q1_8' THEN resp.answer END) AS "A1_Q8",
-    MAX(CASE WHEN resp.question_id = 'q1_9' THEN resp.answer END) AS "A1_Q9",
-    MAX(CASE WHEN resp.question_id = 'q1_10' THEN resp.answer END) AS "A1_Q10",
+    -- Audio 1 Trait Ratings (1-6) & Candid Comment
+    MAX(CASE WHEN resp.question_id = 'q1_1' THEN resp.answer END) AS "A1_Leadership",
+    MAX(CASE WHEN resp.question_id = 'q1_2' THEN resp.answer END) AS "A1_Sense_of_Humor",
+    MAX(CASE WHEN resp.question_id = 'q1_3' THEN resp.answer END) AS "A1_Intelligence",
+    MAX(CASE WHEN resp.question_id = 'q1_4' THEN resp.answer END) AS "A1_Religiousness",
+    MAX(CASE WHEN resp.question_id = 'q1_5' THEN resp.answer END) AS "A1_Self_Confidence",
+    MAX(CASE WHEN resp.question_id = 'q1_6' THEN resp.answer END) AS "A1_Dependability",
+    MAX(CASE WHEN resp.question_id = 'q1_7' THEN resp.answer END) AS "A1_Entertainingness",
+    MAX(CASE WHEN resp.question_id = 'q1_8' THEN resp.answer END) AS "A1_Kindness",
+    MAX(CASE WHEN resp.question_id = 'q1_9' THEN resp.answer END) AS "A1_Ambition",
+    MAX(CASE WHEN resp.question_id = 'q1_10' THEN resp.answer END) AS "A1_Sociability",
+    MAX(CASE WHEN resp.question_id = 'q1_11' THEN resp.answer END) AS "A1_Character",
+    MAX(CASE WHEN resp.question_id = 'q1_12' THEN resp.answer END) AS "A1_Likability",
+    MAX(CASE WHEN resp.question_id = 'q1_comment' THEN resp.answer END) AS "A1_Candid_Opinions",
 
-    -- Audio 2 Answers
-    MAX(CASE WHEN resp.question_id = 'q2_1' THEN resp.answer END) AS "A2_Q1",
-    MAX(CASE WHEN resp.question_id = 'q2_2' THEN resp.answer END) AS "A2_Q2",
-    MAX(CASE WHEN resp.question_id = 'q2_3' THEN resp.answer END) AS "A2_Q3",
-    MAX(CASE WHEN resp.question_id = 'q2_4' THEN resp.answer END) AS "A2_Q4",
-    MAX(CASE WHEN resp.question_id = 'q2_5' THEN resp.answer END) AS "A2_Q5",
-    MAX(CASE WHEN resp.question_id = 'q2_6' THEN resp.answer END) AS "A2_Q6",
-    MAX(CASE WHEN resp.question_id = 'q2_7' THEN resp.answer END) AS "A2_Q7",
-    MAX(CASE WHEN resp.question_id = 'q2_8' THEN resp.answer END) AS "A2_Q8",
-    MAX(CASE WHEN resp.question_id = 'q2_9' THEN resp.answer END) AS "A2_Q9",
-    MAX(CASE WHEN resp.question_id = 'q2_10' THEN resp.answer END) AS "A2_Q10"
+    -- Audio 2 Trait Ratings (1-6) & Candid Comment
+    MAX(CASE WHEN resp.question_id = 'q2_1' THEN resp.answer END) AS "A2_Leadership",
+    MAX(CASE WHEN resp.question_id = 'q2_2' THEN resp.answer END) AS "A2_Sense_of_Humor",
+    MAX(CASE WHEN resp.question_id = 'q2_3' THEN resp.answer END) AS "A2_Intelligence",
+    MAX(CASE WHEN resp.question_id = 'q2_4' THEN resp.answer END) AS "A2_Religiousness",
+    MAX(CASE WHEN resp.question_id = 'q2_5' THEN resp.answer END) AS "A2_Self_Confidence",
+    MAX(CASE WHEN resp.question_id = 'q2_6' THEN resp.answer END) AS "A2_Dependability",
+    MAX(CASE WHEN resp.question_id = 'q2_7' THEN resp.answer END) AS "A2_Entertainingness",
+    MAX(CASE WHEN resp.question_id = 'q2_8' THEN resp.answer END) AS "A2_Kindness",
+    MAX(CASE WHEN resp.question_id = 'q2_9' THEN resp.answer END) AS "A2_Ambition",
+    MAX(CASE WHEN resp.question_id = 'q2_10' THEN resp.answer END) AS "A2_Sociability",
+    MAX(CASE WHEN resp.question_id = 'q2_11' THEN resp.answer END) AS "A2_Character",
+    MAX(CASE WHEN resp.question_id = 'q2_12' THEN resp.answer END) AS "A2_Likability",
+    MAX(CASE WHEN resp.question_id = 'q2_comment' THEN resp.answer END) AS "A2_Candid_Opinions"
 FROM participants p
 LEFT JOIN consent c ON c.participant_id = p.id
 LEFT JOIN experiment_sessions s ON s.participant_id = p.id
@@ -637,7 +660,7 @@ LEFT JOIN recordings r1 ON r1.id = s.audio_1_recording_id
 LEFT JOIN recordings r2 ON r2.id = s.audio_2_recording_id
 LEFT JOIN responses resp ON resp.participant_id = p.id
 GROUP BY 
-    p.participant_id, p.created_at, p.gender, p.ethnicity,
+    p.participant_id, p.created_at, p.gender, p.ethnicity, p.first_language, p.second_language, p.hindi_proficiency,
     c.consent_status, c.consent_timestamp, s.presentation_order,
     r1.code, r1.category, r1.language_variety, r1.speaker_gender,
     s.audio_1_started_at, s.audio_1_completed_at,
@@ -646,15 +669,20 @@ GROUP BY
     s.current_stage, s.session_status, s.submitted_at
 ORDER BY p.created_at ASC;
 
--- B. Tidy / Long View (1 Row Per Response for ANOVA / Regression in R/Python/SPSS)
+-- B. Tidy / Long View (1 Row Per Response for ANOVA / Mixed Models in R/Python/SPSS)
 CREATE OR REPLACE VIEW researcher_responses_long_view AS
 SELECT 
     p.participant_id,
     p.gender AS participant_gender,
     p.ethnicity AS participant_ethnicity,
+    p.first_language,
+    p.second_language,
+    p.hindi_proficiency,
     s.presentation_order,
     q.recording_number,
     q.question_number,
+    q.question_key,
+    q.question_type,
     q.id AS question_id,
     r.id AS recording_id,
     r.code AS audio_code,

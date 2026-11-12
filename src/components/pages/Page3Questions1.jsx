@@ -9,10 +9,10 @@ export default function Page3Questions1() {
   return (
     <div className="w-full">
       <QuestionList
-        title={EXPERIMENT_CONFIG.questionsAudio1.title}
-        description={EXPERIMENT_CONFIG.questionsAudio1.description}
-        questions={EXPERIMENT_CONFIG.questionsAudio1.questions}
-        actionButtonLabel={EXPERIMENT_CONFIG.questionsAudio1.continueButtonLabel}
+        recordingNumber={1}
+        title={EXPERIMENT_CONFIG.questionnaireAudio1.title}
+        description={EXPERIMENT_CONFIG.questionnaireAudio1.description}
+        actionButtonLabel={EXPERIMENT_CONFIG.questionnaireAudio1.continueButtonLabel}
         onSubmitAction={advanceFromQuestions1}
         isLoading={loading}
       />

@@ -10,8 +10,8 @@ export default function Page4Audio2() {
     <div className="w-full">
       <RestrictedAudioPlayer
         audioNumber={2}
-        title={assignedAudio2?.title || "Audio Recording 2"}
-        description={assignedAudio2?.description}
+        title={EXPERIMENT_CONFIG.blindedAudioLabels.audio2.title}
+        description={EXPERIMENT_CONFIG.blindedAudioLabels.audio2.description}
         storagePath={assignedAudio2?.storagePath}
         fallbackSampleUrl={assignedAudio2?.fallbackSampleUrl}
         completionNotice={EXPERIMENT_CONFIG.audioPlayerTexts.completionNotice}

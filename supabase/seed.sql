@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Seed Data: 10 Audio Recordings and 20 Questions
+-- Seed Data: 10 Audio Recordings and 12-Trait Perception Questionnaire
 -- ==============================================================================
 
 -- 1. Insert 10 Audio Recordings (5 Male, 5 Female across Pure and Code-Mixed)
@@ -12,8 +12,8 @@ VALUES
     'Pure Hindi', 
     'male', 
     'Audio Recording (Pure Hindi - Male)', 
-    '[PLACEHOLDER: INSERT PURE HINDI MALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_HINDI_MALE]', 
+    'Audio recording of speaker.', 
+    'pure_hindi_male.mp3', 
     60
 ),
 (
@@ -23,8 +23,8 @@ VALUES
     'Pure Hindi', 
     'female', 
     'Audio Recording (Pure Hindi - Female)', 
-    '[PLACEHOLDER: INSERT PURE HINDI FEMALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_HINDI_FEMALE]', 
+    'Audio recording of speaker.', 
+    'pure_hindi_female.mp3', 
     60
 ),
 (
@@ -34,8 +34,8 @@ VALUES
     'Pure English', 
     'male', 
     'Audio Recording (Pure English - Male)', 
-    '[PLACEHOLDER: INSERT PURE ENGLISH MALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_ENGLISH_MALE]', 
+    'Audio recording of speaker.', 
+    'pure_english_male.mp3', 
     60
 ),
 (
@@ -45,8 +45,8 @@ VALUES
     'Pure English', 
     'female', 
     'Audio Recording (Pure English - Female)', 
-    '[PLACEHOLDER: INSERT PURE ENGLISH FEMALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_ENGLISH_FEMALE]', 
+    'Audio recording of speaker.', 
+    'pure_english_female.mp3', 
     60
 ),
 (
@@ -56,8 +56,8 @@ VALUES
     'Pure Bombay Hindi', 
     'male', 
     'Audio Recording (Pure Bombay Hindi - Male)', 
-    '[PLACEHOLDER: INSERT PURE BOMBAY HINDI MALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_MALE]', 
+    'Audio recording of speaker.', 
+    'pure_bombay_hindi_male.mp3', 
     60
 ),
 (
@@ -67,8 +67,8 @@ VALUES
     'Pure Bombay Hindi', 
     'female', 
     'Audio Recording (Pure Bombay Hindi - Female)', 
-    '[PLACEHOLDER: INSERT PURE BOMBAY HINDI FEMALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_PURE_BOMBAY_HINDI_FEMALE]', 
+    'Audio recording of speaker.', 
+    'pure_bombay_hindi_female.mp3', 
     60
 ),
 (
@@ -78,8 +78,8 @@ VALUES
     'Code-Mixed Hindi', 
     'male', 
     'Audio Recording (Code-Mixed Hindi - Male)', 
-    '[PLACEHOLDER: INSERT CODE-MIXED HINDI MALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_MALE]', 
+    'Audio recording of speaker.', 
+    'codemixed_hindi_male.mp3', 
     60
 ),
 (
@@ -89,8 +89,8 @@ VALUES
     'Code-Mixed Hindi', 
     'female', 
     'Audio Recording (Code-Mixed Hindi - Female)', 
-    '[PLACEHOLDER: INSERT CODE-MIXED HINDI FEMALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_CODEMIXED_HINDI_FEMALE]', 
+    'Audio recording of speaker.', 
+    'codemixed_hindi_female.mp3', 
     60
 ),
 (
@@ -100,8 +100,8 @@ VALUES
     'Code-Mixed Bombay English', 
     'male', 
     'Audio Recording (Code-Mixed Bombay English - Male)', 
-    '[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH MALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_MALE]', 
+    'Audio recording of speaker.', 
+    'codemixed_bombay_english_male.mp3', 
     60
 ),
 (
@@ -111,8 +111,8 @@ VALUES
     'Code-Mixed Bombay English', 
     'female', 
     'Audio Recording (Code-Mixed Bombay English - Female)', 
-    '[PLACEHOLDER: INSERT CODE-MIXED BOMBAY ENGLISH FEMALE AUDIO DESCRIPTION]', 
-    '[PLACEHOLDER: AUDIO_CODEMIXED_BOMBAY_ENGLISH_FEMALE]', 
+    'Audio recording of speaker.', 
+    'codemixed_bombay_english_female.mp3', 
     60
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -127,38 +127,48 @@ ON CONFLICT (id) DO UPDATE SET
 
 SELECT setval('recordings_id_seq', (SELECT MAX(id) FROM recordings));
 
--- 2. Insert Questions for First Audio Recording (10 Questions)
-INSERT INTO questions (id, recording_number, question_number, question_text, is_required, placeholder)
+-- 2. Insert 12 Trait Rating Scale Items + 1 Candid Comment for Recording 1
+INSERT INTO questions (id, recording_number, question_number, question_key, question_text, question_type, is_required, placeholder)
 VALUES
-('q1_1',  1, 1,  '[INSERT QUESTION 1]',  true, 'Write your answer here...'),
-('q1_2',  1, 2,  '[INSERT QUESTION 2]',  true, 'Write your answer here...'),
-('q1_3',  1, 3,  '[INSERT QUESTION 3]',  true, 'Write your answer here...'),
-('q1_4',  1, 4,  '[INSERT QUESTION 4]',  true, 'Write your answer here...'),
-('q1_5',  1, 5,  '[INSERT QUESTION 5]',  true, 'Write your answer here...'),
-('q1_6',  1, 6,  '[INSERT QUESTION 6]',  true, 'Write your answer here...'),
-('q1_7',  1, 7,  '[INSERT QUESTION 7]',  true, 'Write your answer here...'),
-('q1_8',  1, 8,  '[INSERT QUESTION 8]',  true, 'Write your answer here...'),
-('q1_9',  1, 9,  '[INSERT QUESTION 9]',  true, 'Write your answer here...'),
-('q1_10', 1, 10, '[INSERT QUESTION 10]', true, 'Write your answer here...')
+('q1_1',       1, 1,  'leadership',        'Leadership',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_2',       1, 2,  'humor',             'Sense of Humor',      'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_3',       1, 3,  'intelligence',      'Intelligence',        'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_4',       1, 4,  'religiousness',     'Religiousness',       'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_5',       1, 5,  'confidence',        'Self-confidence',     'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_6',       1, 6,  'dependability',     'Dependability',       'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_7',       1, 7,  'entertainingness',  'Entertainingness',    'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_8',       1, 8,  'kindness',          'Kindness',            'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_9',       1, 9,  'ambition',          'Ambition',            'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_10',      1, 10, 'sociability',       'Sociability',         'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_11',      1, 11, 'character',         'Character',           'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_12',      1, 12, 'likability',        'Likability',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q1_comment', 1, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', true, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
 ON CONFLICT (recording_number, question_number) DO UPDATE SET
+    question_key = EXCLUDED.question_key,
     question_text = EXCLUDED.question_text,
+    question_type = EXCLUDED.question_type,
     is_required = EXCLUDED.is_required,
     placeholder = EXCLUDED.placeholder;
 
--- 3. Insert Questions for Second Audio Recording (10 Questions)
-INSERT INTO questions (id, recording_number, question_number, question_text, is_required, placeholder)
+-- 3. Insert 12 Trait Rating Scale Items + 1 Candid Comment for Recording 2
+INSERT INTO questions (id, recording_number, question_number, question_key, question_text, question_type, is_required, placeholder)
 VALUES
-('q2_1',  2, 1,  '[INSERT QUESTION 1]',  true, 'Write your answer here...'),
-('q2_2',  2, 2,  '[INSERT QUESTION 2]',  true, 'Write your answer here...'),
-('q2_3',  2, 3,  '[INSERT QUESTION 3]',  true, 'Write your answer here...'),
-('q2_4',  2, 4,  '[INSERT QUESTION 4]',  true, 'Write your answer here...'),
-('q2_5',  2, 5,  '[INSERT QUESTION 5]',  true, 'Write your answer here...'),
-('q2_6',  2, 6,  '[INSERT QUESTION 6]',  true, 'Write your answer here...'),
-('q2_7',  2, 7,  '[INSERT QUESTION 7]',  true, 'Write your answer here...'),
-('q2_8',  2, 8,  '[INSERT QUESTION 8]',  true, 'Write your answer here...'),
-('q2_9',  2, 9,  '[INSERT QUESTION 9]',  true, 'Write your answer here...'),
-('q2_10', 2, 10, '[INSERT QUESTION 10]', true, 'Write your answer here...')
+('q2_1',       2, 1,  'leadership',        'Leadership',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_2',       2, 2,  'humor',             'Sense of Humor',      'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_3',       2, 3,  'intelligence',      'Intelligence',        'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_4',       2, 4,  'religiousness',     'Religiousness',       'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_5',       2, 5,  'confidence',        'Self-confidence',     'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_6',       2, 6,  'dependability',     'Dependability',       'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_7',       2, 7,  'entertainingness',  'Entertainingness',    'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_8',       2, 8,  'kindness',          'Kindness',            'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_9',       2, 9,  'ambition',          'Ambition',            'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_10',      2, 10, 'sociability',       'Sociability',         'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_11',      2, 11, 'character',         'Character',           'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_12',      2, 12, 'likability',        'Likability',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
+('q2_comment', 2, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', true, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
 ON CONFLICT (recording_number, question_number) DO UPDATE SET
+    question_key = EXCLUDED.question_key,
     question_text = EXCLUDED.question_text,
+    question_type = EXCLUDED.question_type,
     is_required = EXCLUDED.is_required,
     placeholder = EXCLUDED.placeholder;

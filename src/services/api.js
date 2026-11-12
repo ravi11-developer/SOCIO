@@ -46,7 +46,6 @@ function allocateAudiosLocally() {
   const pureAudios = EXPERIMENT_CONFIG.audioLibrary.filter((a) => a.category === 'pure');
   const codeMixedAudios = EXPERIMENT_CONFIG.audioLibrary.filter((a) => a.category === 'code_mixed');
 
-  // Sort pure audios by allocation count, then random tie-breaker
   const sortedPure = [...pureAudios].sort((a, b) => {
     const countA = counts[a.id] || 0;
     const countB = counts[b.id] || 0;
@@ -55,7 +54,6 @@ function allocateAudiosLocally() {
   });
   const selectedPure = sortedPure[0] || pureAudios[0];
 
-  // Sort code-mixed audios, prioritizing opposite gender if possible to balance participant exposure
   const sortedCodeMixed = [...codeMixedAudios].sort((a, b) => {
     const aOpposite = a.speakerGender !== selectedPure.speakerGender ? 0 : 1;
     const bOpposite = b.speakerGender !== selectedPure.speakerGender ? 0 : 1;
@@ -71,7 +69,6 @@ function allocateAudiosLocally() {
   recordLocalAllocation(selectedPure.id);
   recordLocalAllocation(selectedCodeMixed.id);
 
-  // Counterbalance presentation order: 50% pure first, 50% code-mixed first
   const isPureFirst = Math.random() < 0.5;
   return {
     assigned_audio_1: isPureFirst ? selectedPure : selectedCodeMixed,
@@ -110,6 +107,9 @@ export const api = {
         session_token: existingToken || crypto.randomUUID(),
         gender: null,
         ethnicity: null,
+        first_language: null,
+        second_language: null,
+        hindi_proficiency: null,
         current_stage: 'consent_pending',
         audio_1_completed: false,
         audio_2_completed: false,
@@ -126,11 +126,14 @@ export const api = {
   },
 
   /**
-   * Submits demographics and informed consent
+   * Submits extended demographics and informed consent
    */
-  async submitConsentAndDemographics(sessionToken, gender, ethnicity, consent) {
+  async submitConsentAndDemographics(sessionToken, gender, ethnicity, firstLanguage, secondLanguage, hindiProficiency, consent) {
     if (!consent) {
       throw new Error('Informed consent is required.');
+    }
+    if (!hindiProficiency || hindiProficiency < 1 || hindiProficiency > 6) {
+      throw new Error('Please rate your Hindi proficiency on a scale of 1 to 6.');
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -139,6 +142,9 @@ export const api = {
           p_session_token: sessionToken,
           p_gender: gender,
           p_ethnicity: ethnicity,
+          p_first_language: firstLanguage,
+          p_second_language: secondLanguage,
+          p_hindi_proficiency: hindiProficiency,
           p_consent: consent,
         });
         if (error) throw error;
@@ -152,6 +158,9 @@ export const api = {
     const local = getLocalState() || {};
     local.gender = gender;
     local.ethnicity = ethnicity;
+    local.first_language = firstLanguage;
+    local.second_language = secondLanguage;
+    local.hindi_proficiency = hindiProficiency;
     local.current_stage = 'audio_1_pending';
     saveLocalState(local);
     return { success: true, data: { current_stage: 'audio_1_pending' } };
@@ -216,7 +225,7 @@ export const api = {
       const { data, error } = await supabase.rpc('rpc_autosave_response', {
         p_session_token: sessionToken,
         p_question_id: questionId,
-        p_answer: answer,
+        p_answer: String(answer),
       });
       if (error) throw error;
       return { success: true, data };

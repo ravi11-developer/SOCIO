@@ -9,8 +9,8 @@ function renderWithContext(ui) {
   return render(<ExperimentProvider>{ui}</ExperimentProvider>);
 }
 
-describe('Question Validation & Page 1 Consent Form', () => {
-  it('1. Consent checkbox and demographics must be filled to enable Start button', async () => {
+describe('Sociolinguistic Validation & Page 1 Form', () => {
+  it('1. Requires gender, ethnicity, first & second language, hindi proficiency, and consent to enable Start', async () => {
     await act(async () => {
       renderWithContext(<Page1InstructionsConsent />);
     });
@@ -18,19 +18,42 @@ describe('Question Validation & Page 1 Consent Form', () => {
     const startBtn = screen.getByTestId('start-experiment-button');
     expect(startBtn).toBeDisabled();
 
-    // Select gender
-    const genderSelect = screen.getByLabelText(/gender/i);
+    // Verify instruction headline
+    expect(screen.getByText('Listen to the audio and answer the questions')).toBeInTheDocument();
+
+    // Fill Gender
+    const genderSelect = screen.getByLabelText(/^gender/i);
     await act(async () => {
       fireEvent.change(genderSelect, { target: { value: 'female' } });
     });
+    expect(startBtn).toBeDisabled();
 
-    // Select ethnicity
-    const ethnicitySelect = screen.getByLabelText(/ethnicity/i);
+    // Fill Ethnicity
+    const ethnicitySelect = screen.getByLabelText(/^ethnicity/i);
     await act(async () => {
-      fireEvent.change(ethnicitySelect, { target: { value: 'option_placeholder_1' } });
+      fireEvent.change(ethnicitySelect, { target: { value: 'south_asian' } });
     });
+    expect(startBtn).toBeDisabled();
 
-    // Start button still disabled because consent not checked
+    // Fill First Language
+    const firstLangInput = screen.getByLabelText(/first language/i);
+    await act(async () => {
+      fireEvent.change(firstLangInput, { target: { value: 'Hindi' } });
+    });
+    expect(startBtn).toBeDisabled();
+
+    // Fill Second Language
+    const secondLangInput = screen.getByLabelText(/second language/i);
+    await act(async () => {
+      fireEvent.change(secondLangInput, { target: { value: 'English' } });
+    });
+    expect(startBtn).toBeDisabled();
+
+    // Select Hindi Proficiency (e.g. 5)
+    const profBtn5 = screen.getByTestId('hindi-prof-5');
+    await act(async () => {
+      fireEvent.click(profBtn5);
+    });
     expect(startBtn).toBeDisabled();
 
     // Check consent checkbox
@@ -39,56 +62,67 @@ describe('Question Validation & Page 1 Consent Form', () => {
       fireEvent.click(consentCheck);
     });
 
-    // Now start button should be enabled
+    // Now all requirements are satisfied
     expect(startBtn).not.toBeDisabled();
   });
 
-  it('2. QuestionList displays answered count and blocks empty required submissions', async () => {
+  it('2. QuestionList displays answered count (13 total) and blocks until all 12 traits and comment are complete', async () => {
     const onSubmitMock = vi.fn();
-    const mockQuestions = [
-      { id: 'q1_1', number: 1, text: 'Question 1', required: true, placeholder: 'Answer 1' },
-      { id: 'q1_2', number: 2, text: 'Question 2', required: true, placeholder: 'Answer 2' },
-    ];
 
     await act(async () => {
       renderWithContext(
         <QuestionList
-          title="Test Questions"
-          questions={mockQuestions}
+          recordingNumber={1}
+          title="Test Questionnaire"
           actionButtonLabel="Continue"
           onSubmitAction={onSubmitMock}
         />
       );
     });
 
-    expect(screen.getByText('0 of 2 answered')).toBeInTheDocument();
+    expect(screen.getByText('0 of 13 answered')).toBeInTheDocument();
 
     const submitBtn = screen.getByTestId('question-submit-button');
     await act(async () => {
       fireEvent.click(submitBtn);
     });
 
-    // Submission blocked
     expect(onSubmitMock).not.toHaveBeenCalled();
-    expect(screen.getByText('Incomplete Questionnaire')).toBeInTheDocument();
+    expect(screen.getByText('Incomplete Evaluation')).toBeInTheDocument();
 
-    // Fill first question
-    const textarea1 = screen.getByPlaceholderText('Answer 1');
+    // Rate trait 1 (Leadership) as 5
+    const trait1Score5 = screen.getByTestId('rating-1-5');
     await act(async () => {
-      fireEvent.change(textarea1, { target: { value: 'My answer to question 1' } });
+      fireEvent.click(trait1Score5);
     });
 
-    expect(screen.getByText('1 of 2 answered')).toBeInTheDocument();
+    expect(screen.getByText('1 of 13 answered')).toBeInTheDocument();
 
-    // Fill second question
-    const textarea2 = screen.getByPlaceholderText('Answer 2');
+    // Rate remaining 11 traits (traits 2 to 12)
+    for (let traitNum = 2; traitNum <= 12; traitNum++) {
+      const btn = screen.getByTestId(`rating-${traitNum}-4`);
+      await act(async () => {
+        fireEvent.click(btn);
+      });
+    }
+
+    expect(screen.getByText('12 of 13 answered')).toBeInTheDocument();
+
+    // Attempt submit without candid comment
     await act(async () => {
-      fireEvent.change(textarea2, { target: { value: 'My answer to question 2' } });
+      fireEvent.click(submitBtn);
+    });
+    expect(onSubmitMock).not.toHaveBeenCalled();
+
+    // Fill candid comment
+    const commentInput = screen.getByPlaceholderText(/write your candid thoughts/i);
+    await act(async () => {
+      fireEvent.change(commentInput, { target: { value: 'The speaker sounds very confident, engaging, and articulate.' } });
     });
 
-    expect(screen.getByText('2 of 2 answered')).toBeInTheDocument();
+    expect(screen.getByText('13 of 13 answered')).toBeInTheDocument();
 
-    // Submit again
+    // Submit now succeeds
     await act(async () => {
       fireEvent.click(submitBtn);
     });

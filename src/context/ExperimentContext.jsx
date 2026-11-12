@@ -15,7 +15,6 @@ export const STAGES = {
 
 function normalizeAudioMetadata(audioObj, defaultSlot = 1) {
   if (!audioObj) {
-    // Fallback to library item
     const fallbackItem = EXPERIMENT_CONFIG.audioLibrary[defaultSlot - 1] || EXPERIMENT_CONFIG.audioLibrary[0];
     return fallbackItem;
   }
@@ -25,8 +24,10 @@ function normalizeAudioMetadata(audioObj, defaultSlot = 1) {
     category: audioObj.category,
     languageVariety: audioObj.language_variety || audioObj.languageVariety || 'Standard',
     speakerGender: audioObj.speaker_gender || audioObj.speakerGender || 'unspecified',
-    title: audioObj.title || `Audio Recording ${defaultSlot}`,
-    description: audioObj.description || '',
+    title: `Audio Recording ${defaultSlot}`,
+    description: defaultSlot === 1 
+      ? EXPERIMENT_CONFIG.blindedAudioLabels.audio1.description 
+      : EXPERIMENT_CONFIG.blindedAudioLabels.audio2.description,
     storagePath: audioObj.audio_storage_path || audioObj.storagePath || '',
     fallbackSampleUrl: audioObj.fallbackSampleUrl || '/audio/sample_audio.mp3',
     durationSeconds: audioObj.duration_seconds || audioObj.durationSeconds || 60,
@@ -39,8 +40,15 @@ export function ExperimentProvider({ children }) {
   const [sessionToken, setSessionToken] = useState(null);
   const [participantId, setParticipantId] = useState(null);
   const [currentStage, setCurrentStage] = useState(STAGES.PAGE_1_CONSENT);
+  
+  // Demographics
   const [gender, setGender] = useState('');
   const [ethnicity, setEthnicity] = useState('');
+  const [firstLanguage, setFirstLanguage] = useState('');
+  const [secondLanguage, setSecondLanguage] = useState('');
+  const [hindiProficiency, setHindiProficiency] = useState(null);
+
+  // Questionnaire responses & autosave state
   const [responses, setResponses] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved');
   const [audio1Completed, setAudio1Completed] = useState(false);
@@ -77,6 +85,10 @@ export function ExperimentProvider({ children }) {
 
           if (data.gender) setGender(data.gender);
           if (data.ethnicity) setEthnicity(data.ethnicity);
+          if (data.first_language) setFirstLanguage(data.first_language);
+          if (data.second_language) setSecondLanguage(data.second_language);
+          if (data.hindi_proficiency) setHindiProficiency(data.hindi_proficiency);
+
           if (data.responses) setResponses(data.responses);
           if (data.audio_1_completed) setAudio1Completed(true);
           if (data.audio_2_completed) setAudio2Completed(true);
@@ -133,8 +145,15 @@ export function ExperimentProvider({ children }) {
     };
   }, [currentStage, isSubmitted]);
 
-  // 3. Step 1 Action: Submit Consent & Demographics
-  const submitConsentAndDemographics = async (selectedGender, selectedEthnicity, consentAccepted) => {
+  // 3. Step 1 Action: Submit Extended Demographics & Consent
+  const submitConsentAndDemographics = async (
+    selectedGender,
+    selectedEthnicity,
+    selectedFirstLang,
+    selectedSecondLang,
+    selectedHindiProf,
+    consentAccepted
+  ) => {
     if (!consentAccepted) {
       throw new Error('You must accept the informed consent to participate.');
     }
@@ -144,6 +163,15 @@ export function ExperimentProvider({ children }) {
     if (!selectedEthnicity) {
       throw new Error('Please select your ethnicity.');
     }
+    if (!selectedFirstLang || selectedFirstLang.trim() === '') {
+      throw new Error('Please provide your first language (mother tongue).');
+    }
+    if (!selectedSecondLang || selectedSecondLang.trim() === '') {
+      throw new Error('Please provide your second language.');
+    }
+    if (!selectedHindiProf || selectedHindiProf < 1 || selectedHindiProf > 6) {
+      throw new Error('Please rate your Hindi proficiency on a scale of 1 to 6.');
+    }
 
     setError(null);
     setLoading(true);
@@ -152,10 +180,16 @@ export function ExperimentProvider({ children }) {
         sessionToken,
         selectedGender,
         selectedEthnicity,
+        selectedFirstLang.trim(),
+        selectedSecondLang.trim(),
+        Number(selectedHindiProf),
         consentAccepted
       );
       setGender(selectedGender);
       setEthnicity(selectedEthnicity);
+      setFirstLanguage(selectedFirstLang.trim());
+      setSecondLanguage(selectedSecondLang.trim());
+      setHindiProficiency(Number(selectedHindiProf));
       setCurrentStage(STAGES.PAGE_2_AUDIO_1);
       return res;
     } catch (err) {
@@ -224,7 +258,7 @@ export function ExperimentProvider({ children }) {
         console.error('Autosave error for question', questionId, err);
         setSaveStatus('error');
       }
-    }, 600);
+    }, 500);
   }, [sessionToken]);
 
   const flushResponseSave = useCallback(async (questionId, value) => {
@@ -243,12 +277,17 @@ export function ExperimentProvider({ children }) {
 
   // 6. Step 3 Action: Advance from Questions 1 to Audio 2
   const advanceFromQuestions1 = async () => {
-    const unanswered = EXPERIMENT_CONFIG.questionsAudio1.questions.filter(
-      (q) => q.required && (!responses[q.id] || responses[q.id].trim() === '')
+    // 12 traits + 1 candid comment must be answered
+    const requiredKeys = [
+      ...Array.from({ length: 12 }, (_, i) => `q1_${i + 1}`),
+      'q1_comment'
+    ];
+    const unanswered = requiredKeys.filter(
+      (key) => !responses[key] || String(responses[key]).trim() === ''
     );
 
     if (unanswered.length > 0) {
-      throw new Error(`Please answer all questions before proceeding (${unanswered.length} unanswered).`);
+      throw new Error(`Please rate all 12 traits and write your candid opinions before proceeding (${unanswered.length} items remaining).`);
     }
 
     setLoading(true);
@@ -266,12 +305,17 @@ export function ExperimentProvider({ children }) {
 
   // 7. Step 5 Action: Final Submit Experiment
   const submitFinalExperiment = async () => {
-    const unanswered = EXPERIMENT_CONFIG.questionsAudio2.questions.filter(
-      (q) => q.required && (!responses[q.id] || responses[q.id].trim() === '')
+    // 12 traits + 1 candid comment must be answered for Audio 2
+    const requiredKeys = [
+      ...Array.from({ length: 12 }, (_, i) => `q2_${i + 1}`),
+      'q2_comment'
+    ];
+    const unanswered = requiredKeys.filter(
+      (key) => !responses[key] || String(responses[key]).trim() === ''
     );
 
     if (unanswered.length > 0) {
-      throw new Error(`Please answer all questions before submitting (${unanswered.length} unanswered).`);
+      throw new Error(`Please rate all 12 traits and write your candid opinions before submitting (${unanswered.length} items remaining).`);
     }
 
     setLoading(true);
@@ -333,6 +377,9 @@ export function ExperimentProvider({ children }) {
     currentStage,
     gender,
     ethnicity,
+    firstLanguage,
+    secondLanguage,
+    hindiProficiency,
     responses,
     saveStatus,
     audio1Completed,
