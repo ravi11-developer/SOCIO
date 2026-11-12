@@ -343,6 +343,26 @@ git push -u origin main
 
 ---
 
+## Admin Dashboard (`/admin`)
+
+A private, live dashboard to watch participants, view answers, and permanently delete participants or individual answers. Only the account listed in `admin_users` can see any data: access is enforced by Postgres RLS, not by the page.
+
+1. **Run the migration:** paste [`supabase/migrations/20261112000000_admin_dashboard.sql`](supabase/migrations/20261112000000_admin_dashboard.sql) into the Supabase SQL Editor and run it. It is additive and safe to re-run.
+2. **Block sign-ups:** Authentication → Sign In / Providers → turn **off** "Allow new users to sign up". Keep the Email provider enabled.
+3. **Create your account:** Authentication → Users → **Add user** → **Create new user** with your email. Tick "Auto Confirm User".
+4. **Make yourself admin:** in the SQL Editor run:
+   ```sql
+   INSERT INTO public.admin_users (user_id, email)
+   SELECT id, email FROM auth.users WHERE email = 'you@example.com'
+   ON CONFLICT (user_id) DO NOTHING;
+   ```
+5. **Allow the redirect:** Authentication → URL Configuration. Set **Site URL** to your production site, and add `https://<your-site>/admin` and `http://localhost:5173/admin` to **Redirect URLs**.
+6. Open `https://<your-site>/admin`, enter your email, and click the link **in the same browser**.
+
+Deletes are permanent. The audit log records who deleted what and when, but not the deleted answers.
+
+---
+
 ## 13. Security, Privacy & Attention Limitations
 
 ### Participant Privacy
