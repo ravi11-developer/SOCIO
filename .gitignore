@@ -30,3 +30,7 @@ dist-ssr
 # Researcher exports
 exports/
 node_modules
+
+# Audio preparation (scripts/prepare_audio.mjs): mapping.csv reveals which file is which guise
+original_audio/
+prepared_audio/
