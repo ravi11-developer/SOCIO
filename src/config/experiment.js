@@ -51,14 +51,30 @@ export const EXPERIMENT_CONFIG = {
         { value: "prefer_not_to_say", label: "Prefer not to say" }
       ]
     },
+    // Standardised language list so answers are spelt consistently for analysis.
+    // Anything not listed can be entered through "Other (please specify)".
+    // Stored values: first language = one name (or "Other: <text>");
+    // second language = names joined with "; " (or "None").
+    languageOptions: [
+      "Assamese", "Bengali", "Bhojpuri", "Bodo", "Dogri", "English", "Gujarati",
+      "Haryanvi", "Hindi", "Kannada", "Kashmiri", "Konkani", "Maithili", "Malayalam",
+      "Manipuri (Meitei)", "Marathi", "Marwari / Rajasthani", "Nepali", "Odia",
+      "Punjabi", "Sanskrit", "Santali", "Sindhi", "Tamil", "Telugu", "Tulu", "Urdu"
+    ],
+    otherLanguageMaxLength: 60,
     firstLanguage: {
       label: "First Language (Mother Tongue / L1)",
-      placeholder: "e.g., Hindi, English, Marathi, Gujarati, Bengali, etc.",
+      selectPlaceholder: "-- Select First Language --",
+      otherLabel: "Other (please specify)",
+      otherPlaceholder: "Type your first language",
       required: true
     },
     secondLanguage: {
-      label: "Second Language (L2)",
-      placeholder: "e.g., English, Hindi, Punjabi, none, etc.",
+      label: "Second Language(s) (L2)",
+      helperNote: "Select every other language you speak. Choose \"None\" if you only speak your first language.",
+      noneLabel: "None",
+      otherLabel: "Other (please specify)",
+      otherPlaceholder: "Type any other language(s)",
       required: true
     },
     hindiProficiency: {
@@ -80,6 +96,7 @@ export const EXPERIMENT_CONFIG = {
 
   // --- Page 1: Informed Consent ---
   consent: {
+    title: "Informed Consent",
     statement: "I understand that my participation in this research study is completely voluntary and anonymous. No personal identifying information such as my name, phone number, or email address will be collected. All response data will be stored securely and used solely for academic research purposes. I may withdraw from the study at any time prior to submission.",
     checkboxLabel: "I have read and understood the information above and voluntarily agree to participate in this study.",
     startButtonLabel: "Start Experiment"
@@ -106,9 +123,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure Hindi",
       speakerGender: "male",
       title: "Audio Recording 1",
-      storagePath: "pure_hindi_male.mp3",
+      storagePath: "pure_hindi_male.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 70
     },
     {
       id: 2,
@@ -117,9 +134,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure Hindi",
       speakerGender: "female",
       title: "Audio Recording",
-      storagePath: "pure_hindi_female.mp3",
+      storagePath: "pure_hindi_female.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 72
     },
     {
       id: 3,
@@ -128,9 +145,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure English",
       speakerGender: "male",
       title: "Audio Recording",
-      storagePath: "pure_english_male.mp3",
+      storagePath: "pure_english_male.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 54
     },
     {
       id: 4,
@@ -139,9 +156,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure English",
       speakerGender: "female",
       title: "Audio Recording",
-      storagePath: "pure_english_female.mp3",
+      storagePath: "pure_english_female.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 55
     },
     {
       id: 5,
@@ -150,9 +167,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure Bombay Hindi",
       speakerGender: "male",
       title: "Audio Recording",
-      storagePath: "pure_bombay_hindi_male.mp3",
+      storagePath: "pure_bombay_hindi_male.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 62
     },
     {
       id: 6,
@@ -161,9 +178,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Pure Bombay Hindi",
       speakerGender: "female",
       title: "Audio Recording",
-      storagePath: "pure_bombay_hindi_female.mp3",
+      storagePath: "pure_bombay_hindi_female.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 67
     },
     {
       id: 7,
@@ -172,9 +189,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Code-Mixed Hindi",
       speakerGender: "male",
       title: "Audio Recording",
-      storagePath: "codemixed_hindi_male.mp3",
+      storagePath: "codemixed_hindi_male.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 70
     },
     {
       id: 8,
@@ -183,9 +200,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Code-Mixed Hindi",
       speakerGender: "female",
       title: "Audio Recording",
-      storagePath: "codemixed_hindi_female.mp3",
+      storagePath: "codemixed_hindi_female.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 61
     },
     {
       id: 9,
@@ -194,9 +211,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Code-Mixed Bombay English",
       speakerGender: "male",
       title: "Audio Recording",
-      storagePath: "codemixed_bombay_english_male.mp3",
+      storagePath: "codemixed_bombay_english_male.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 63
     },
     {
       id: 10,
@@ -205,9 +222,9 @@ export const EXPERIMENT_CONFIG = {
       languageVariety: "Code-Mixed Bombay English",
       speakerGender: "female",
       title: "Audio Recording",
-      storagePath: "codemixed_bombay_english_female.mp3",
+      storagePath: "codemixed_bombay_english_female.mp3.mpeg",
       fallbackSampleUrl: "/audio/sample_audio.mp3",
-      durationSeconds: 60
+      durationSeconds: 73
     }
   ],
 
@@ -259,6 +276,16 @@ export const EXPERIMENT_CONFIG = {
   // --- Completion Screen (Page 5) ---
   completion: {
     title: "Thank You for Participating!",
-    message: "Your responses have been successfully recorded. Thank you for contributing your valuable time and candid observations to this sociolinguistic research study."
+    message: "Your responses have been successfully recorded. Thank you for contributing your valuable time and candid observations to this sociolinguistic research study.",
+    savedNote: "Your responses have been saved and can no longer be changed.",
+    closeNote: "You may now close this browser window.",
+    newSessionNote: "Is someone else taking part on this same device? Start a fresh session for them below.",
+    newSessionButtonLabel: "Start a new session for another participant"
+  },
+
+  // --- Shown if this browser already finished the study (e.g. after a refresh) ---
+  alreadyCompleted: {
+    title: "This study has already been completed on this device",
+    message: "Thank you, the responses from this browser have already been submitted."
   }
 };

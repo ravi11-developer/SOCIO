@@ -37,7 +37,7 @@ export default function Header() {
               {saveStatus === 'error' && (
                 <>
                   <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="hidden sm:inline">Offline (Saved locally)</span>
+                  <span className="hidden sm:inline">Not saved yet, will retry</span>
                 </>
               )}
             </div>

@@ -2,10 +2,10 @@ import React from 'react';
 import { EXPERIMENT_CONFIG } from '../../config/experiment';
 import { useExperiment } from '../../context/ExperimentContext';
 import QuestionList from '../questions/QuestionList';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { CheckCircle2, Lock, UserPlus } from 'lucide-react';
 
 export default function Page5Questions2() {
-  const { isSubmitted, participantId, submitFinalExperiment, loading } = useExperiment();
+  const { isSubmitted, participantId, submitFinalExperiment, loading, startNewSession } = useExperiment();
 
   // If submitted, show the Completion Screen (part of Page 5, not a 6th page)
   if (isSubmitted) {
@@ -34,8 +34,21 @@ export default function Page5Questions2() {
               <Lock className="w-3.5 h-3.5 text-slate-500" />
               <span>Participant Confirmation: <strong>{participantId}</strong></span>
             </div>
-            <p>Your responses have been securely encrypted, saved, and locked.</p>
-            <p className="text-slate-400">You may now safely close this browser window.</p>
+            <p>{EXPERIMENT_CONFIG.completion.savedNote}</p>
+            <p className="text-slate-400">{EXPERIMENT_CONFIG.completion.closeNote}</p>
+          </div>
+
+          <div className="pt-4 border-t border-border space-y-3">
+            <p className="text-xs text-secondary">{EXPERIMENT_CONFIG.completion.newSessionNote}</p>
+            <button
+              type="button"
+              onClick={startNewSession}
+              className="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-semibold border border-border bg-white hover:bg-slate-50 text-main"
+              data-testid="start-new-session-button"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              {EXPERIMENT_CONFIG.completion.newSessionButtonLabel}
+            </button>
           </div>
         </div>
       </div>

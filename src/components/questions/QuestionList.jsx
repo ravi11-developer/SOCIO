@@ -3,6 +3,8 @@ import { useExperiment } from '../../context/ExperimentContext';
 import { EXPERIMENT_CONFIG } from '../../config/experiment';
 import { CheckCircle2, AlertCircle, MessageSquare } from 'lucide-react';
 
+const COMMENT_MAX_LENGTH = 5000; // matches the server-side limit
+
 export default function QuestionList({
   title,
   description,
@@ -11,12 +13,17 @@ export default function QuestionList({
   onSubmitAction,
   isLoading = false,
 }) {
-  const { responses, updateResponse, flushResponseSave } = useExperiment();
+  const { responses, updateResponse, flushResponseSave, traitOrder1, traitOrder2, error: contextError } = useExperiment();
   const [validationErrors, setValidationErrors] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const prefix = `q${recordingNumber}_`;
-  const traits = EXPERIMENT_CONFIG.traits;
+  // Traits are shown in this participant's stored random order (default 1..12).
+  // Question ids stay tied to the trait number, so the order never changes what is saved.
+  const traitOrder = (recordingNumber === 1 ? traitOrder1 : traitOrder2) || [];
+  const traitsByNumber = new Map(EXPERIMENT_CONFIG.traits.map((t) => [t.number, t]));
+  const orderedTraits = traitOrder.map((n) => traitsByNumber.get(n)).filter(Boolean);
+  const traits = orderedTraits.length === EXPERIMENT_CONFIG.traits.length ? orderedTraits : EXPERIMENT_CONFIG.traits;
   const commentKey = `${prefix}comment`;
 
   // The comment box is optional; this only drives the "Completed" badge.
@@ -73,7 +80,13 @@ export default function QuestionList({
 
     setValidationErrors({});
     if (onSubmitAction) {
-      onSubmitAction();
+      // The context shows any failure; swallow the rejection so it is not unhandled.
+      try {
+        const result = onSubmitAction();
+        if (result && typeof result.catch === 'function') result.catch(() => {});
+      } catch (err) {
+        /* shown by the context */
+      }
     }
   };
 
@@ -221,6 +234,7 @@ export default function QuestionList({
             id={`comment-input-${recordingNumber}`}
             rows={4}
             value={responses[commentKey] || ''}
+            maxLength={COMMENT_MAX_LENGTH}
             onChange={(e) => handleCommentChange(e.target.value)}
             onBlur={(e) => handleCommentBlur(e.target.value)}
             placeholder={EXPERIMENT_CONFIG.openOpinionPrompt.placeholder}
@@ -240,6 +254,14 @@ export default function QuestionList({
           )}
         </div>
       </div>
+
+      {/* Save / stage errors, repeated here so they are visible next to the button */}
+      {contextError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3 text-red-800 text-sm" data-testid="question-submit-error">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <span>{contextError}</span>
+        </div>
+      )}
 
       {/* Action / Next Button */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
