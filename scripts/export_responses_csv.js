@@ -17,6 +17,7 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
+import { fetchAllRows } from '../src/lib/pagination.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,11 +48,20 @@ async function exportResponses() {
   console.log(`Connecting to Supabase at ${supabaseUrl}...`);
   console.log(`Querying ${targetView} (${isLongFormat ? 'Tidy/Long format' : 'Wide participant format'})...`);
   
-  const { data, error } = await supabase
-    .from(targetView)
-    .select('*');
+  // Paginate: Supabase returns at most 1,000 rows per request and does not report
+  // truncation, so a single request would silently drop most long-format rows.
+  const ordering = isLongFormat
+    ? [['participant_id'], ['recording_number'], ['question_number'], ['question_id']]
+    : [['"Created At"'], ['"Participant ID"']];
 
-  if (error) {
+  let data;
+  try {
+    data = await fetchAllRows(() => {
+      let query = supabase.from(targetView).select('*');
+      for (const [column] of ordering) query = query.order(column, { ascending: true });
+      return query;
+    });
+  } catch (error) {
     console.error(`Failed to query ${targetView}:`, error.message);
     process.exit(1);
   }

@@ -73,7 +73,7 @@ export default function ResponsesView({ data, onOpenParticipant }) {
           ))}
         </select>
         <span className="text-xs text-secondary sm:ml-auto">
-          {rows.length} answers{responses.length >= 2000 ? ' (latest 2,000 loaded)' : ''}
+          {rows.length} answers
         </span>
       </div>
 
