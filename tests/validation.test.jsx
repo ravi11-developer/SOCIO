@@ -59,7 +59,7 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     expect(startBtn).not.toBeDisabled();
   });
 
-  it('2. QuestionList blocks until all 12 traits and comment are complete', async () => {
+  it('2. QuestionList blocks until all 12 traits are rated; comment is optional', async () => {
     const onSubmitMock = vi.fn();
 
     await act(async () => {
@@ -95,19 +95,7 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
       });
     }
 
-    // Attempt submit without candid comment
-    await act(async () => {
-      fireEvent.click(submitBtn);
-    });
-    expect(onSubmitMock).not.toHaveBeenCalled();
-
-    // Fill candid comment
-    const commentInput = screen.getByPlaceholderText(/write your candid thoughts/i);
-    await act(async () => {
-      fireEvent.change(commentInput, { target: { value: 'The speaker sounds very confident, engaging, and articulate.' } });
-    });
-
-    // Submit now succeeds
+    // Submit succeeds without a candid comment (the comment box is optional)
     await act(async () => {
       fireEvent.click(submitBtn);
     });

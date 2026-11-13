@@ -277,17 +277,14 @@ export function ExperimentProvider({ children }) {
 
   // 6. Step 3 Action: Advance from Questions 1 to Audio 2
   const advanceFromQuestions1 = async () => {
-    // 12 traits + 1 candid comment must be answered
-    const requiredKeys = [
-      ...Array.from({ length: 12 }, (_, i) => `q1_${i + 1}`),
-      'q1_comment'
-    ];
+    // All 12 traits must be rated; the candid comment is optional
+    const requiredKeys = Array.from({ length: 12 }, (_, i) => `q1_${i + 1}`);
     const unanswered = requiredKeys.filter(
       (key) => !responses[key] || String(responses[key]).trim() === ''
     );
 
     if (unanswered.length > 0) {
-      throw new Error(`Please rate all 12 traits and write your candid opinions before proceeding (${unanswered.length} items remaining).`);
+      throw new Error(`Please rate all 12 traits before proceeding (${unanswered.length} items remaining).`);
     }
 
     setLoading(true);
@@ -305,17 +302,14 @@ export function ExperimentProvider({ children }) {
 
   // 7. Step 5 Action: Final Submit Experiment
   const submitFinalExperiment = async () => {
-    // 12 traits + 1 candid comment must be answered for Audio 2
-    const requiredKeys = [
-      ...Array.from({ length: 12 }, (_, i) => `q2_${i + 1}`),
-      'q2_comment'
-    ];
+    // All 12 traits must be rated for Audio 2; the candid comment is optional
+    const requiredKeys = Array.from({ length: 12 }, (_, i) => `q2_${i + 1}`);
     const unanswered = requiredKeys.filter(
       (key) => !responses[key] || String(responses[key]).trim() === ''
     );
 
     if (unanswered.length > 0) {
-      throw new Error(`Please rate all 12 traits and write your candid opinions before submitting (${unanswered.length} items remaining).`);
+      throw new Error(`Please rate all 12 traits before submitting (${unanswered.length} items remaining).`);
     }
 
     setLoading(true);

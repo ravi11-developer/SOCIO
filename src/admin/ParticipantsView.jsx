@@ -128,7 +128,6 @@ export default function ParticipantsView({ data, selectedId, onSelect }) {
             <strong>{pendingDelete?.response_count ?? 0}</strong> answers. It cannot be undone.
           </>
         }
-        confirmText={pendingDelete?.code}
         onCancel={() => setPendingDelete(null)}
         onConfirm={async () => {
           await deleteParticipant(pendingDelete.id);

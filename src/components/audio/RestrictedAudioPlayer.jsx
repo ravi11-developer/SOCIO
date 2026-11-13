@@ -81,8 +81,11 @@ export default function RestrictedAudioPlayer({
 
   const handleEnded = () => {
     setIsPlaying(false);
-    setIsCompleted(true);
-    markAudioCompleted(audioNumber);
+    // Only report completion once; replays must not re-trigger the stage transition.
+    if (!isCompleted) {
+      setIsCompleted(true);
+      markAudioCompleted(audioNumber);
+    }
   };
 
   const handleError = (e) => {
@@ -110,6 +113,17 @@ export default function RestrictedAudioPlayer({
         setLoadError(true);
       });
     }
+  };
+
+  // Restart from the beginning (backward seek only, so the no-skip restriction still holds).
+  const handleReplay = () => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = 0;
+    setCurrentTime(0);
+    audioRef.current.play().catch((err) => {
+      console.error('Replay failed:', err);
+      setLoadError(true);
+    });
   };
 
   const handleRetry = () => {
@@ -186,6 +200,7 @@ export default function RestrictedAudioPlayer({
 
         {/* Custom Restricted Audio Player Controls */}
         <div className="bg-slate-50 border border-border p-6 rounded-xl flex flex-col items-center space-y-5">
+          <div className="flex items-center gap-4">
           {/* Play / Pause Toggle Button */}
           <button
             type="button"
@@ -204,6 +219,25 @@ export default function RestrictedAudioPlayer({
               <Play className="w-8 h-8 fill-current ml-1" />
             )}
           </button>
+
+          {/* Replay Button: restarts the recording from the beginning */}
+          <button
+            type="button"
+            onClick={handleReplay}
+            disabled={!hasStarted || loadError || isLoading}
+            aria-label="Replay audio from the beginning"
+            title="Replay from the beginning"
+            className={`h-11 px-4 rounded-full flex items-center gap-1.5 text-sm font-semibold border transition-all focus:outline-none focus:ring-4 focus:ring-primary/30 ${
+              !hasStarted || loadError || isLoading
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                : 'bg-white text-primary border-primary/40 hover:bg-primary/5 active:scale-95'
+            }`}
+            data-testid="audio-replay-button"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Replay
+          </button>
+          </div>
 
           {/* Time & Non-Seekable Progress Bar */}
           <div className="w-full max-w-md space-y-2">

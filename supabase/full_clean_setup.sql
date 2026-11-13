@@ -764,7 +764,7 @@ VALUES
 ('q1_10',      1, 10, 'sociability',       'Sociability',         'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
 ('q1_11',      1, 11, 'character',         'Character',           'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
 ('q1_12',      1, 12, 'likability',        'Likability',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
-('q1_comment', 1, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', true, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
+('q1_comment', 1, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', false, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
 ON CONFLICT (recording_number, question_number) DO UPDATE SET
     question_key = EXCLUDED.question_key,
     question_text = EXCLUDED.question_text,
@@ -787,7 +787,7 @@ VALUES
 ('q2_10',      2, 10, 'sociability',       'Sociability',         'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
 ('q2_11',      2, 11, 'character',         'Character',           'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
 ('q2_12',      2, 12, 'likability',        'Likability',          'scale',   true, 'Rate 1 (Least) to 6 (Most)'),
-('q2_comment', 2, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', true, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
+('q2_comment', 2, 13, 'comment',           'List all your opinions about the speaker, be as candid as possible', 'comment', false, 'Write your candid thoughts, impressions, and opinions about the speaker here...')
 ON CONFLICT (recording_number, question_number) DO UPDATE SET
     question_key = EXCLUDED.question_key,
     question_text = EXCLUDED.question_text,

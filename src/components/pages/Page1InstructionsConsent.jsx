@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { EXPERIMENT_CONFIG } from '../../config/experiment';
 import { useExperiment } from '../../context/ExperimentContext';
-import { Clock, Info, Headphones, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Info, Headphones, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function Page1InstructionsConsent() {
   const {
@@ -83,12 +83,6 @@ export default function Page1InstructionsConsent() {
             <p className="text-sm text-secondary mt-2 leading-relaxed">
               {EXPERIMENT_CONFIG.description}
             </p>
-            {EXPERIMENT_CONFIG.estimatedTime && (
-              <div className="flex items-center text-xs text-secondary mt-3">
-                <Clock className="w-4 h-4 mr-1.5 text-primary" />
-                <span>Estimated completion time: <strong>{EXPERIMENT_CONFIG.estimatedTime}</strong></span>
-              </div>
-            )}
           </div>
         </div>
 

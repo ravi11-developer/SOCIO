@@ -96,4 +96,31 @@ describe('RestrictedAudioPlayer Component', () => {
     expect(screen.getByText('Audio Loading Error')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /retry audio/i })).toBeInTheDocument();
   });
+
+  it('Replay button is disabled until playback starts, then restarts from the beginning', () => {
+    const { container } = renderWithContext(
+      <RestrictedAudioPlayer
+        audioNumber={1}
+        title="Audio Recording 1"
+        storagePath="sample.mp3"
+        fallbackSampleUrl="https://example.com/audio.mp3"
+      />
+    );
+
+    const audioElement = container.querySelector('audio');
+    const replayBtn = screen.getByTestId('audio-replay-button');
+    expect(replayBtn).toBeDisabled();
+
+    act(() => {
+      fireEvent.loadedMetadata(audioElement);
+      fireEvent.play(audioElement);
+    });
+    expect(replayBtn).not.toBeDisabled();
+
+    audioElement.currentTime = 30;
+    const playSpy = vi.spyOn(audioElement, 'play').mockResolvedValue(undefined);
+    fireEvent.click(replayBtn);
+    expect(audioElement.currentTime).toBe(0);
+    expect(playSpy).toHaveBeenCalled();
+  });
 });

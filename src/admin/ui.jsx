@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Activity, CheckCircle2, Clock, Loader2, ShieldCheck, Trash2, XCircle } from 'lucide-react';
 import { STATUS_LABELS } from './status';
 
@@ -91,21 +91,16 @@ export function BarList({ title, subtitle, items, emptyText = 'No data yet.' }) 
 }
 
 /**
- * Confirmation dialog for permanent deletes. When `confirmText` is set, the user must
- * type it exactly before the delete button enables.
+ * Single-click confirmation dialog for permanent deletes.
  */
-export function ConfirmDialog({ open, title, body, confirmText, confirmLabel = 'Delete permanently', onConfirm, onCancel }) {
-  const [typed, setTyped] = useState('');
+export function ConfirmDialog({ open, title, body, confirmLabel = 'Delete permanently', onConfirm, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const inputRef = useRef(null);
 
   useEffect(() => {
     if (open) {
-      setTyped('');
       setError(null);
       setBusy(false);
-      setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [open]);
 
@@ -117,7 +112,7 @@ export function ConfirmDialog({ open, title, body, confirmText, confirmLabel = '
   }, [open, busy, onCancel]);
 
   if (!open) return null;
-  const canConfirm = !busy && (!confirmText || typed.trim() === confirmText);
+  const canConfirm = !busy;
 
   const handleConfirm = async () => {
     setBusy(true);
@@ -138,22 +133,6 @@ export function ConfirmDialog({ open, title, body, confirmText, confirmLabel = '
           <h2 id="confirm-title" className="text-base font-semibold text-main">{title}</h2>
         </div>
         <div className="text-sm text-secondary leading-relaxed">{body}</div>
-        {confirmText && (
-          <div className="mt-4">
-            <label htmlFor="confirm-input" className="block text-xs font-medium text-main mb-1">
-              Type <span className="font-mono font-semibold">{confirmText}</span> to confirm
-            </label>
-            <input
-              id="confirm-input"
-              ref={inputRef}
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && canConfirm && handleConfirm()}
-              className="w-full px-3 py-2 rounded-lg border border-border font-mono text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              autoComplete="off"
-            />
-          </div>
-        )}
         {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onCancel} disabled={busy} className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-slate-50 disabled:opacity-60">

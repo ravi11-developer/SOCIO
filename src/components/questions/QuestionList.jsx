@@ -19,17 +19,8 @@ export default function QuestionList({
   const traits = EXPERIMENT_CONFIG.traits;
   const commentKey = `${prefix}comment`;
 
-  // Count answered traits (1 to 12)
-  const answeredTraitsCount = traits.filter(
-    (t) => responses[`${prefix}${t.number}`] !== undefined && responses[`${prefix}${t.number}`] !== ''
-  ).length;
-
-  // Check if comment is answered
+  // The comment box is optional; this only drives the "Completed" badge.
   const isCommentAnswered = responses[commentKey] && responses[commentKey].trim().length > 0;
-  
-  const totalItems = traits.length + 1; // 12 traits + 1 comment = 13
-  const answeredCount = answeredTraitsCount + (isCommentAnswered ? 1 : 0);
-  const isAllAnswered = answeredCount === totalItems;
 
   const handleRatingSelect = (traitNumber, score) => {
     const key = `${prefix}${traitNumber}`;
@@ -70,10 +61,6 @@ export default function QuestionList({
       }
     });
 
-    if (!responses[commentKey] || responses[commentKey].trim() === '') {
-      errors[commentKey] = 'Please provide your candid thoughts and opinions about the speaker.';
-    }
-
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       const firstErrorId = Object.keys(errors)[0];
@@ -108,7 +95,7 @@ export default function QuestionList({
             <div>
               <p className="font-medium">Incomplete Evaluation</p>
               <p className="text-xs text-red-700 mt-1">
-                Please complete all remaining trait ratings and comments before continuing.
+                Please complete all remaining trait ratings before continuing.
               </p>
             </div>
           </div>
@@ -215,7 +202,7 @@ export default function QuestionList({
                 className="font-bold text-base text-main block mt-1"
               >
                 {EXPERIMENT_CONFIG.openOpinionPrompt.prompt}
-                <span className="text-red-500 ml-1" title="Required">*</span>
+                <span className="text-secondary font-normal text-xs ml-1">(optional)</span>
               </label>
               <p className="text-xs text-secondary mt-0.5">
                 Share any impressions, thoughts on background, accent, demeanor, or trustworthiness.
