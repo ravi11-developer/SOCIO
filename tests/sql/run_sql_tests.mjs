@@ -41,7 +41,7 @@ await db.exec(fs.readFileSync(path.join(here, 'supabase_stubs.sql'), 'utf8'));
 const setupSql = fs.readFileSync(path.join(repo, 'supabase', 'full_clean_setup.sql'), 'utf8');
 await db.exec(setupSql);
 ok('full_clean_setup.sql builds a fresh database');
-await db.exec(fs.readFileSync(path.join(repo, 'supabase', 'migrations', '20261113000000_data_integrity_fixes.sql'), 'utf8'));
+await db.exec(fs.readFileSync(path.join(repo, 'supabase', 'migrations', '20261113010000_data_integrity_fixes.sql'), 'utf8'));
 ok('the data integrity migration is safe to run again on an up-to-date database');
 await db.query(`SELECT rpc_init_or_resume_session(NULL)`);
 await expectError(db.exec(setupSql), /Refusing to run/, 'full_clean_setup.sql refuses to run once participants exist');
@@ -110,9 +110,10 @@ await expectError(rpc(db, `rpc_autosave_response($1,'q1_1','3.5')`, [tok]), /VAL
 await expectError(rpc(db, `rpc_autosave_response($1,'q1_99','3')`, [tok]), /VALIDATION/, 'unknown questions are refused');
 await expectError(rpc(db, `rpc_autosave_response($1,'q1_comment',$2)`, [tok, 'x'.repeat(5001)]), /VALIDATION/, 'comments over 5000 characters are refused');
 await expectError(rpc(db, `rpc_autosave_response($1,'q2_1','3')`, [tok]), /STAGE_LOCKED/, 'audio 2 answers are refused while on audio 1 questions');
+for (let i = 2; i <= 12; i++) await rpc(db, `rpc_autosave_response($1,$2,$3)`, [tok, `q1_${i}`, String((i % 6) + 1)]);
+await expectError(rpc(db, 'rpc_complete_questions_1($1)', [tok]), /required items/, 'questions 1 cannot finish with a rating missing');
 await rpc(db, `rpc_autosave_response($1,'q1_1',' 5 ')`, [tok]);
 for (let i = 2; i <= 12; i++) await rpc(db, `rpc_autosave_response($1,$2,$3)`, [tok, `q1_${i}`, String((i % 6) + 1)]);
-await expectError(rpc(db, 'rpc_complete_questions_1($1)', [tok]), /required items/, 'questions 1 cannot finish without the comment');
 await rpc(db, `rpc_autosave_response($1,'q1_comment','Sounds confident.')`, [tok]);
 const q1 = await rpc(db, 'rpc_complete_questions_1($1)', [tok]);
 assert.equal(q1.current_stage, 'audio_2_pending');
@@ -124,10 +125,9 @@ await db.query(`UPDATE experiment_sessions SET audio_2_started_at = now() - inte
 comp = await rpc(db, 'rpc_complete_audio($1,2)', [tok]);
 assert.equal(comp.current_stage, 'questions_2_pending');
 for (let i = 1; i <= 12; i++) await rpc(db, `rpc_autosave_response($1,$2,'4')`, [tok, `q2_${i}`]);
-await rpc(db, `rpc_autosave_response($1,'q2_comment','Friendly.')`, [tok]);
 const sub = await rpc(db, 'rpc_submit_experiment($1)', [tok]);
 assert.equal(sub.current_stage, 'submitted');
-ok('audio 2 and final submission complete');
+ok('audio 2 and final submission complete without a comment (comments are optional)');
 await expectError(rpc(db, `rpc_autosave_response($1,'q2_comment','late edit')`, [tok]), /after final submission/, 'answers are locked after submission');
 
 // ---------- Export views (service role, as the export script uses) ----------
@@ -145,7 +145,7 @@ assert.equal(wideCols[wideCols.indexOf('A2_Candid_Opinions') + 1], 'Audio 1 List
 ok('wide view keeps its original columns first and adds listening, event and trait-order columns');
 
 const long = await asRole(db, 'service_role', `SELECT * FROM researcher_responses_long_view WHERE participant_id = $1 ORDER BY recording_number, question_number`, [s.participant_id]);
-assert.equal(long.rows.length, 26);
+assert.equal(long.rows.length, 25); // 24 ratings + the audio 1 comment (no audio 2 comment given)
 const l1 = long.rows.find((r) => r.question_id === 'q1_1');
 assert.equal(l1.answer_numeric, 5);
 assert.equal(l1.session_status, 'submitted');

@@ -8,8 +8,8 @@
 -- participants table already contains any rows.
 --
 -- The result matches the live project: storage paths end in .mp3.mpeg, the
--- bucket is audio_files, and the admin dashboard and data integrity migrations
--- are applied at the end.
+-- bucket is audio_files, and the admin dashboard, optional comments and data
+-- integrity migrations are applied at the end.
 -- ==============================================================================
 
 DO $guard$
@@ -1132,7 +1132,20 @@ $$;
 
 
 -- ==============================================================================
--- APPLY THE DATA INTEGRITY MIGRATION (copied from supabase/migrations/20261113000000_data_integrity_fixes.sql)
+-- APPLY THE OPTIONAL COMMENTS MIGRATION (copied from supabase/migrations/20261113000000_optional_comments.sql)
+-- ==============================================================================
+-- ==============================================================================
+-- MAKE THE OPEN-FEEDBACK COMMENT BOXES OPTIONAL
+-- rpc_complete_questions_1 and rpc_submit_experiment only block on questions with
+-- is_required = true, so flipping the flag is enough. Safe to re-run.
+-- ==============================================================================
+UPDATE public.questions
+SET is_required = false
+WHERE id IN ('q1_comment', 'q2_comment');
+
+
+-- ==============================================================================
+-- APPLY THE DATA INTEGRITY MIGRATION (copied from supabase/migrations/20261113010000_data_integrity_fixes.sql)
 -- ==============================================================================
 -- ==============================================================================
 -- DATA INTEGRITY, LISTENING CHECKS, TRAIT ORDER AND EXPORT VIEW FIXES

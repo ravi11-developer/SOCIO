@@ -73,9 +73,9 @@ The website consists of exactly **FIVE sequential pages**:
 |---|---|:---:|
 | **Page 1** | Instructions, Demographics (Gender, Ethnicity, L1, L2, Hindi proficiency) & Informed Consent (statement + required checkbox) | **20%** |
 | **Page 2** | First Assigned Audio Recording (approx 1 min, restricted player) | **40%** |
-| **Page 3** | 12 trait ratings (1 to 6, in a per-participant random order) + 1 open comment for the first audio | **60%** |
+| **Page 3** | 12 trait ratings (1 to 6, in a per-participant random order) + 1 optional open comment for the first audio | **60%** |
 | **Page 4** | Second Assigned Audio Recording (restricted player) | **80%** |
-| **Page 5** | 12 trait ratings + 1 open comment for the second audio + Final Submission & Completion Screen | **100%** |
+| **Page 5** | 12 trait ratings + 1 optional open comment for the second audio + Final Submission & Completion Screen | **100%** |
 
 ### State Machine Transition Rules
 
@@ -110,7 +110,7 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
 │   ├── full_clean_setup.sql         # Complete setup for a NEW, EMPTY project only (refuses to run on live data)
 │   ├── migrations/
 │   │   ├── 20261112000000_admin_dashboard.sql       # Admin dashboard, locked researcher views
-│   │   └── 20261113000000_data_integrity_fixes.sql  # Validation, listening check, trait order, audio events
+│   │   └── 20261113010000_data_integrity_fixes.sql  # Validation, listening check, trait order, audio events
 │   └── archive/                     # Old schema files kept for history (do not run)
 ├── src/
 │   ├── main.jsx                     # React DOM entry point
@@ -209,7 +209,8 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
 ### B. The live project that is already collecting data
 Never run `full_clean_setup.sql` on it. Run the files in [`supabase/migrations/`](supabase/migrations/) in date order instead:
 1. `20261112000000_admin_dashboard.sql` (already applied on the live project).
-2. `20261113000000_data_integrity_fixes.sql` (see section 14).
+2. `20261113000000_optional_comments.sql` (makes the comment boxes optional).
+3. `20261113010000_data_integrity_fixes.sql` (see section 14).
 
 Both are additive, idempotent and never drop tables or data. Older schema files are kept in `supabase/archive/` for history only; do not run them.
 
@@ -405,8 +406,9 @@ Modern web standards in commercial browsers (Chrome, Safari, Firefox, Edge) oper
 
 Do these steps in order, ideally at a time when nobody is taking part.
 
-1. **Database:** in the Supabase SQL Editor, run
-   [`supabase/migrations/20261113000000_data_integrity_fixes.sql`](supabase/migrations/20261113000000_data_integrity_fixes.sql).
+1. **Database:** in the Supabase SQL Editor, run `supabase/migrations/20261113000000_optional_comments.sql` if it has not been
+   run yet, then run
+   [`supabase/migrations/20261113010000_data_integrity_fixes.sql`](supabase/migrations/20261113010000_data_integrity_fixes.sql).
    It is safe on live data and safe to run twice. It:
    - records each recording's real length (54 to 73 s, previously all 60 s);
    - adds per-participant random trait order (`trait_order_1`, `trait_order_2`; existing sessions are recorded as the default order);
@@ -438,6 +440,8 @@ Do these steps in order, ideally at a time when nobody is taking part.
 
 - **Use only finished participants:** filter `Session Status = 'submitted'` (wide view) or `session_status = 'submitted'` (long view).
   Partial sessions belong to people who withdrew by leaving before submission.
+- **Comments are optional:** a participant may have no `q1_comment` / `q2_comment` row (long view) or an empty
+  `A1_Candid_Opinions` / `A2_Candid_Opinions` (wide view).
 - **Ratings:** `answer` is text; the long view also has `answer_numeric` (1 to 6) for rating items. `question_key` names the trait.
 - **Presentation:** `recording_number` (1 or 2) is the order a clip was heard in; `presentation_order` says whether the pure or the
   code-mixed clip came first. `audio_code`, `audio_category`, `language_variety` and `speaker_gender` describe the guise.
