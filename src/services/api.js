@@ -1,8 +1,56 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { EXPERIMENT_CONFIG } from '../config/experiment';
 
-const LOCAL_STORAGE_KEY = 'audio_research_session';
+export const LOCAL_STORAGE_KEY = 'audio_research_session';
+export const SESSION_TOKEN_KEY = 'audio_research_session_token';
+export const COMPLETED_FLAG_KEY = 'audio_research_completed_code';
 const ALLOCATION_COUNTS_KEY = 'audio_research_allocations';
+
+/** True when the site talks to the real database (false in tests and local development without .env). */
+export const isLiveDatabase = Boolean(isSupabaseConfigured && supabase);
+
+/** Error raised when the server says the recording was not listened to for long enough. */
+export class ListenIncompleteError extends Error {
+  constructor(details = {}) {
+    super('The recording has to be listened to in full before continuing.');
+    this.name = 'ListenIncompleteError';
+    this.code = 'LISTEN_INCOMPLETE';
+    this.details = details;
+  }
+}
+
+/**
+ * Errors that will fail the same way however often they are retried
+ * (bad input, wrong stage, session already submitted, unknown session).
+ */
+export function isNonRetryableError(err) {
+  const msg = String(err?.message || '');
+  return (
+    err?.code === 'LISTEN_INCOMPLETE' ||
+    /VALIDATION:|STAGE_LOCKED:|after final submission|Invalid session token|Informed consent/i.test(msg)
+  );
+}
+
+/** Removes this browser's stored session, so the next visit starts a new participant. */
+export function clearStoredSession() {
+  try {
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch (e) {
+    /* storage unavailable: nothing to clear */
+  }
+}
+
+function randomTraitOrder() {
+  const order = Array.from({ length: 12 }, (_, i) => i + 1);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function getLocalState() {
   try {
@@ -82,17 +130,15 @@ export const api = {
    * Initializes a new session or resumes an existing one using sessionToken
    */
   async initOrResumeSession(existingToken = null) {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.rpc('rpc_init_or_resume_session', {
-          p_session_token: existingToken || null,
-        });
-        if (error) throw error;
-        saveLocalState(data);
-        return { success: true, data };
-      } catch (err) {
-        console.error('Supabase session init failed, falling back to local cache:', err);
-      }
+    if (isLiveDatabase) {
+      // No silent fallback to browser-only mode: a session the database has never
+      // seen cannot save anything, so the caller must show a connection error instead.
+      const { data, error } = await supabase.rpc('rpc_init_or_resume_session', {
+        p_session_token: existingToken || null,
+      });
+      if (error) throw error;
+      saveLocalState(data);
+      return { success: true, data };
     }
 
     // Local / Offline Simulation Fallback
@@ -117,6 +163,8 @@ export const api = {
         assigned_audio_1: allocations.assigned_audio_1,
         assigned_audio_2: allocations.assigned_audio_2,
         presentation_order: allocations.presentation_order,
+        trait_order_1: randomTraitOrder(),
+        trait_order_2: randomTraitOrder(),
         responses: {},
       };
       saveLocalState(local);
@@ -136,7 +184,7 @@ export const api = {
       throw new Error('Please rate your Hindi proficiency on a scale of 1 to 6.');
     }
 
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       try {
         const { data, error } = await supabase.rpc('rpc_submit_consent_and_demographics', {
           p_session_token: sessionToken,
@@ -170,15 +218,36 @@ export const api = {
    * Records audio start timestamp
    */
   async recordAudioStart(sessionToken, audioNumber) {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.rpc('rpc_record_audio_start', {
-          p_session_token: sessionToken,
-          p_audio_number: audioNumber,
-        });
-      } catch (err) {
-        console.warn('Audio start logging failed:', err);
-      }
+    if (!isLiveDatabase) return;
+    // The server's listening check measures from this timestamp, so retry a little.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error } = await supabase.rpc('rpc_record_audio_start', {
+        p_session_token: sessionToken,
+        p_audio_number: audioNumber,
+      });
+      if (!error) return;
+      console.warn('Audio start logging failed:', error);
+      if (isNonRetryableError(error)) return;
+      await sleep(600 * (attempt + 1));
+    }
+  },
+
+  /**
+   * Logs a playback event (play, pause, ended, hidden, visible, load_error).
+   * Best effort: failures are ignored because they must never block a participant.
+   */
+  async recordAudioEvent(sessionToken, audioNumber, eventType, positionSeconds = null) {
+    if (!isLiveDatabase || !sessionToken) return;
+    try {
+      const position = Number.isFinite(positionSeconds) ? Math.round(positionSeconds * 100) / 100 : null;
+      await supabase.rpc('rpc_record_audio_event', {
+        p_session_token: sessionToken,
+        p_audio_number: audioNumber,
+        p_event_type: eventType,
+        p_position_seconds: position,
+      });
+    } catch (err) {
+      console.warn('Audio event logging failed:', err);
     }
   },
 
@@ -186,13 +255,16 @@ export const api = {
    * Marks audio playback complete and unlocks next stage
    */
   async completeAudio(sessionToken, audioNumber) {
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       try {
         const { data, error } = await supabase.rpc('rpc_complete_audio', {
           p_session_token: sessionToken,
           p_audio_number: audioNumber,
         });
         if (error) throw error;
+        if (data && data.success === false && data.reason === 'listen_incomplete') {
+          throw new ListenIncompleteError(data);
+        }
         return { success: true, data };
       } catch (err) {
         console.error('Supabase audio completion error:', err);
@@ -221,7 +293,7 @@ export const api = {
     local.responses[questionId] = answer;
     saveLocalState(local);
 
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       const { data, error } = await supabase.rpc('rpc_autosave_response', {
         p_session_token: sessionToken,
         p_question_id: questionId,
@@ -238,7 +310,7 @@ export const api = {
    * Validates Audio 1 responses and advances to Audio 2
    */
   async completeQuestions1(sessionToken) {
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       try {
         const { data, error } = await supabase.rpc('rpc_complete_questions_1', {
           p_session_token: sessionToken,
@@ -261,7 +333,7 @@ export const api = {
    * Final submission of Audio 2 questions and closes session
    */
   async submitExperiment(sessionToken) {
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       try {
         const { data, error } = await supabase.rpc('rpc_submit_experiment', {
           p_session_token: sessionToken,
@@ -283,23 +355,27 @@ export const api = {
   },
 
   /**
-   * Resolves audio URL from Supabase storage bucket 'audio_files' or fallback
+   * Resolves the audio URL from the Supabase storage bucket 'audio_files'.
+   * On the live site there is deliberately NO fallback to the sample clip: if the
+   * assigned recording cannot be found, null is returned and the player shows an
+   * error, rather than a participant rating a speaker they never heard.
+   * The sample clip is used only in local development and tests.
    */
   getAudioUrl(storagePath, fallbackUrl) {
-    const safeFallback = fallbackUrl || '/audio/sample_audio.mp3';
+    const safeFallback = isLiveDatabase ? null : fallbackUrl || '/audio/sample_audio.mp3';
     if (!storagePath || storagePath.startsWith('[PLACEHOLDER')) {
       return safeFallback;
     }
     if (storagePath.startsWith('http://') || storagePath.startsWith('https://') || storagePath.startsWith('/')) {
       return storagePath;
     }
-    if (isSupabaseConfigured && supabase) {
+    if (isLiveDatabase) {
       let path = storagePath;
       if (!path.endsWith('.mpeg') && !path.endsWith('.mp3')) {
         path = `${path}.mp3.mpeg`;
       }
       const { data } = supabase.storage.from('audio_files').getPublicUrl(path);
-      return data?.publicUrl || safeFallback;
+      return data?.publicUrl || null;
     }
     return safeFallback;
   }

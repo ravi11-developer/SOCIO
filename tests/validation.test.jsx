@@ -10,7 +10,7 @@ function renderWithContext(ui) {
 }
 
 describe('Sociolinguistic Validation & Page 1 Form', () => {
-  it('1. Requires gender, ethnicity, first & second language, and hindi proficiency to enable Start', async () => {
+  it('1. Requires gender, ethnicity, first & second language, hindi proficiency and consent to enable Start', async () => {
     await act(async () => {
       renderWithContext(<Page1InstructionsConsent />);
     });
@@ -18,8 +18,10 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     const startBtn = screen.getByTestId('start-experiment-button');
     expect(startBtn).toBeDisabled();
 
-    // Verify instruction headline
+    // Verify instruction headline, instructions list and the consent statement are shown
     expect(screen.getByText('Listen to the audio and answer the questions')).toBeInTheDocument();
+    expect(screen.getByTestId('participant-instructions')).toBeInTheDocument();
+    expect(screen.getByTestId('consent-statement')).toHaveTextContent(/voluntary and anonymous/i);
 
     // Fill Gender
     const genderSelect = screen.getByLabelText(/^gender/i);
@@ -35,17 +37,16 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
     });
     expect(startBtn).toBeDisabled();
 
-    // Fill First Language
-    const firstLangInput = screen.getByLabelText(/first language/i);
+    // Fill First Language (standardised dropdown)
+    const firstLangSelect = screen.getByLabelText(/first language/i);
     await act(async () => {
-      fireEvent.change(firstLangInput, { target: { value: 'Hindi' } });
+      fireEvent.change(firstLangSelect, { target: { value: 'Hindi' } });
     });
     expect(startBtn).toBeDisabled();
 
-    // Fill Second Language
-    const secondLangInput = screen.getByLabelText(/second language/i);
+    // Fill Second Language (tick English)
     await act(async () => {
-      fireEvent.change(secondLangInput, { target: { value: 'English' } });
+      fireEvent.click(screen.getByTestId('second-language-English'));
     });
     expect(startBtn).toBeDisabled();
 
@@ -55,7 +56,12 @@ describe('Sociolinguistic Validation & Page 1 Form', () => {
       fireEvent.click(profBtn5);
     });
 
-    // Now all requirements are satisfied (consent is automatic)
+    // Everything except consent is filled: Start must stay disabled
+    expect(startBtn).toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('consent-checkbox'));
+    });
     expect(startBtn).not.toBeDisabled();
   });
 

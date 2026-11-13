@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { adminSupabase } from './adminClient';
+import { fetchAllRows } from '../lib/pagination';
 
-const RESPONSE_LIMIT = 2000;
 const REFETCH_DEBOUNCE_MS = 600;
 const CLOCK_TICK_MS = 15000;
 
@@ -22,15 +22,30 @@ export function useDashboardData() {
   const debounceRef = useRef(null);
 
   const fetchAll = useCallback(async () => {
+    // Participants and responses are paginated: Supabase returns at most 1,000 rows
+    // per request, which a full study (about 26 answers per participant) exceeds quickly.
+    const wrap = (promise) => promise.then((data) => ({ data, error: null }), (error) => ({ data: null, error }));
     const [p, r, a] = await Promise.all([
-      adminSupabase.from('admin_participant_overview').select('*').order('created_at', { ascending: false }),
-      adminSupabase
-        .from('responses')
-        .select(
-          'id, participant_id, question_id, answer, created_at, updated_at, recordings(code), questions(question_text, recording_number, question_number, question_key, question_type)'
+      wrap(
+        fetchAllRows(() =>
+          adminSupabase
+            .from('admin_participant_overview')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
         )
-        .order('updated_at', { ascending: false })
-        .limit(RESPONSE_LIMIT),
+      ),
+      wrap(
+        fetchAllRows(() =>
+          adminSupabase
+            .from('responses')
+            .select(
+              'id, participant_id, question_id, answer, created_at, updated_at, recordings(code), questions(question_text, recording_number, question_number, question_key, question_type)'
+            )
+            .order('updated_at', { ascending: false })
+            .order('id', { ascending: true })
+        )
+      ),
       adminSupabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
 
@@ -115,7 +130,7 @@ export function useDashboardData() {
 
 /** Wide-format export (one row per participant) via the RLS-protected researcher view. */
 export async function fetchExportRows() {
-  const { data, error } = await adminSupabase.from('researcher_export_view').select('*');
-  if (error) throw new Error(error.message);
-  return data || [];
+  return fetchAllRows(() =>
+    adminSupabase.from('researcher_export_view').select('*').order('"Created At"', { ascending: true }).order('"Participant ID"', { ascending: true })
+  );
 }

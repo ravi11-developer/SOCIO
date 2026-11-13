@@ -21,6 +21,8 @@ Built with **React**, **Vite**, **Tailwind CSS**, and backed by **Supabase (Post
 11. [Researcher Data Access & CSV Export](#researcher-data-access--csv-export)
 12. [GitHub & Cloudflare Pages Deployment](#github--cloudflare-pages-deployment)
 13. [Security, Privacy & Attention Limitations](#security-privacy--attention-limitations)
+14. [Updating the Live Project (November 2026 data-integrity release)](#14-updating-the-live-project-november-2026-data-integrity-release)
+15. [Notes for Data Analysis](#15-notes-for-data-analysis)
 
 ---
 
@@ -69,11 +71,11 @@ The website consists of exactly **FIVE sequential pages**:
 
 | Page | Content | Progress Indicator |
 |---|---|:---:|
-| **Page 1** | Instructions, Demographics (Gender, Ethnicity) & Informed Consent | **20%** |
+| **Page 1** | Instructions, Demographics (Gender, Ethnicity, L1, L2, Hindi proficiency) & Informed Consent (statement + required checkbox) | **20%** |
 | **Page 2** | First Assigned Audio Recording (approx 1 min, restricted player) | **40%** |
-| **Page 3** | 10 Questions for First Audio (multiline text, autosave, validation) | **60%** |
+| **Page 3** | 12 trait ratings (1 to 6, in a per-participant random order) + 1 optional open comment for the first audio | **60%** |
 | **Page 4** | Second Assigned Audio Recording (restricted player) | **80%** |
-| **Page 5** | 10 Questions for Second Audio + Final Submission & Completion Screen | **100%** |
+| **Page 5** | 12 trait ratings + 1 optional open comment for the second audio + Final Submission & Completion Screen | **100%** |
 
 ### State Machine Transition Rules
 
@@ -102,11 +104,14 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
 ├── vite.config.js                   # Vite & Vitest configuration
 ├── exports/                         # Directory for exported researcher CSV files
 ├── scripts/
-│   └── export_responses_csv.js      # CLI utility to export participant data to CSV
+│   ├── export_responses_csv.js      # CLI utility to export participant data to CSV (paginated)
+│   └── prepare_audio.mjs            # Loudness-normalise recordings and give them neutral names
 ├── supabase/
+│   ├── full_clean_setup.sql         # Complete setup for a NEW, EMPTY project only (refuses to run on live data)
 │   ├── migrations/
-│   │   └── 20240101000000_initial_schema.sql  # Schema, RLS, functions & export views
-│   └── seed.sql                     # Seed data for 10 audio recordings & 20 questions
+│   │   ├── 20261112000000_admin_dashboard.sql       # Admin dashboard, locked researcher views
+│   │   └── 20261113010000_data_integrity_fixes.sql  # Validation, listening check, trait order, audio events
+│   └── archive/                     # Old schema files kept for history (do not run)
 ├── src/
 │   ├── main.jsx                     # React DOM entry point
 │   ├── App.jsx                      # App shell with Header, ProgressBar, and stage router
@@ -116,7 +121,8 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
 │   ├── context/
 │   │   └── ExperimentContext.jsx    # State machine provider, autosave & stage sync
 │   ├── lib/
-│   │   └── supabaseClient.js        # Supabase client initializer
+│   │   ├── supabaseClient.js        # Supabase client initializer
+│   │   └── pagination.js            # Fetch every row past Supabase's 1,000-row limit
 │   ├── services/
 │   │   └── api.js                   # API calls to Supabase RPCs with offline fallback
 │   └── components/
@@ -138,7 +144,11 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
     ├── allocation.test.js           # 10-audio library & balanced allocation tests
     ├── stateMachine.test.js         # State machine, isolation & persistence tests
     ├── audioPlayer.test.jsx         # Audio player restriction & completion tests
-    └── validation.test.jsx          # Form validation & required answer checks
+    ├── validation.test.jsx          # Form validation & required answer checks
+    ├── dataIntegrity.test.jsx       # Consent, save flushing, retries, listening check, shared devices
+    ├── liveMode.test.js             # API behaviour against a (mocked) live database
+    ├── pagination.test.js           # Export pagination
+    └── sql/run_sql_tests.mjs        # Database tests in in-memory Postgres (npm run test:sql)
 ```
 
 ---
@@ -188,45 +198,54 @@ consent_pending ──► audio_1_pending ──► questions_1_pending ──�
 
 ## 7. Supabase Setup & Database Migrations
 
-1. Go to [https://supabase.com](https://supabase.com) and log in.
-2. Click **New Project**:
-   - Choose a project name (e.g. `audio-research-study`).
-   - Set a strong database password (store this safely).
-   - Select the region closest to your participants.
-   - Choose the **Free Tier**.
-3. Once the database is ready (~1-2 minutes), navigate to the **SQL Editor** in the left sidebar.
-4. Click **New query** and copy the entire contents of [`supabase/migrations/20240101000000_initial_schema.sql`](file:///home/ravi-sahu/Documents/SOCIO/supabase/migrations/20240101000000_initial_schema.sql).
-5. Click **Run** to execute the migration. This creates:
-   - Tables: `participants`, `consent`, `recordings`, `questions`, `responses`, `experiment_sessions`.
-   - Security: Row Level Security (RLS) policies.
-   - Procedures: `rpc_init_or_resume_session` (with balanced allocation), `rpc_submit_consent_and_demographics`, `rpc_record_audio_start`, `rpc_complete_audio`, `rpc_autosave_response`, `rpc_complete_questions_1`, `rpc_submit_experiment`.
-   - Views: `researcher_export_view` (wide format) and `researcher_responses_long_view` (tidy long format).
-6. Next, open a new query in the SQL Editor and copy [`supabase/seed.sql`](file:///home/ravi-sahu/Documents/SOCIO/supabase/seed.sql).
-7. Click **Run** to populate the 10 recordings and 20 questions.
+**There are two different situations. Do not mix them up.**
 
----
+### A. A brand-new, empty Supabase project
+1. Create the project (Free or Pro tier) and open the **SQL Editor**.
+2. Paste the whole of [`supabase/full_clean_setup.sql`](supabase/full_clean_setup.sql) and click **Run**. It creates every table,
+   function, policy and view, seeds the 10 recordings and 26 questions, creates the `audio_files` bucket and applies all migrations.
+3. The script refuses to run (and changes nothing) if the `participants` table already holds any rows, so it cannot wipe a live study by accident.
+
+### B. The live project that is already collecting data
+Never run `full_clean_setup.sql` on it. Run the files in [`supabase/migrations/`](supabase/migrations/) in date order instead:
+1. `20261112000000_admin_dashboard.sql` (already applied on the live project).
+2. `20261113000000_optional_comments.sql` (makes the comment boxes optional).
+3. `20261113010000_data_integrity_fixes.sql` (see section 14).
+
+Both are additive, idempotent and never drop tables or data. Older schema files are kept in `supabase/archive/` for history only; do not run them.
+
+> **Free-tier pausing:** Supabase pauses Free projects that see too little database activity over a week. Before you send the study
+> link out, and after any quiet period during collection, check in the Supabase dashboard that the project is not paused.
 
 ## 8. Audio Storage Setup
 
-1. In your Supabase dashboard, click **Storage** in the left sidebar.
-2. Click **New Bucket**:
-   - Name: `audio-files`
-   - Set **Public bucket** to `ON` (or leave private if using signed URLs).
-   - Click **Save**.
-3. Inside the `audio-files` bucket, upload your 10 recordings:
-   - `pure_hindi_male.mp3`
-   - `pure_hindi_female.mp3`
-   - `pure_english_male.mp3`
-   - `pure_english_female.mp3`
-   - `pure_bombay_hindi_male.mp3`
-   - `pure_bombay_hindi_female.mp3`
-   - `codemixed_hindi_male.mp3`
-   - `codemixed_hindi_female.mp3`
-   - `codemixed_bombay_english_male.mp3`
-   - `codemixed_bombay_english_female.mp3`
-4. Update their filenames or public URLs in `src/config/experiment.js`.
+The site reads recordings from the public Supabase Storage bucket **`audio_files`**, using the `audio_storage_path` stored for each
+recording in the `recordings` table. The live project currently stores them as `<code>.mp3.mpeg` (for example `pure_hindi_male.mp3.mpeg`).
 
----
+On the live site there is **no fallback to the sample clip**: if a recording cannot be loaded, the participant sees an error with a Retry
+button. (The 2-second `public/audio/sample_audio.mp3` is used only in local development and tests.)
+
+### Recommended: normalise the recordings and give them neutral names
+
+The original clips differ a lot in loudness (male clips about -14 LUFS, female clips between -21 and -30 LUFS) and in encoding
+(64 kbps mono versus 128 kbps stereo). Because every participant hears one male and one female speaker, this could bias ratings by
+speaker gender. The file names (`pure_hindi_male...`) also reveal the guise to anyone who looks at the network traffic.
+
+[`scripts/prepare_audio.mjs`](scripts/prepare_audio.mjs) fixes both. It needs `ffmpeg` and `ffprobe` installed.
+
+1. Download the 10 current files from the `audio_files` bucket into a folder called `original_audio/` (keep their names).
+2. Run:
+   ```bash
+   node scripts/prepare_audio.mjs --in original_audio --out prepared_audio
+   ```
+   This writes 10 loudness-normalised (-16 LUFS), identically encoded (48 kHz mono 128 kbps) MP3 files with random names,
+   plus `update_paths.sql` and `mapping.csv`.
+3. Upload the 10 new `.mp3` files to the `audio_files` bucket.
+4. Run `prepared_audio/update_paths.sql` in the SQL Editor (it points each recording at its new file and records its real duration).
+5. Open the site once and check that both audio pages play, then delete the old descriptively named files from the bucket.
+6. Keep `mapping.csv` private. Both folders are in `.gitignore`.
+
+Do this between participants, not while someone is mid-session.
 
 ## 9. Configuring Research Content & Placeholders
 
@@ -258,24 +277,27 @@ To run tests in interactive watch mode:
 npm run test:watch
 ```
 
-### What is tested (21 Automated Tests):
-- **10-Audio Catalog & Stratified Balancing**: Allocations across sequential participants distribute evenly across all 10 audios and both genders.
-- **Participant Initialization**: Unique session token generation and session resumption.
-- **Consent Enforcement**: Participant cannot advance without checking consent.
-- **Demographic Inputs**: Gender and Ethnicity required.
-- **Non-Seekable Audio Player**: No scrubbing, no fast-forward/rewind controls.
-- **Playback Completion Trigger**: Continue button unlocks only when playback reaches `ended`.
-- **Loading Error Recovery**: Audio error displays retry button.
-- **Questionnaire Validation**: Blocks incomplete submissions on Page 3 and Page 5.
-- **Autosave & Persistence**: Answers are saved to local cache and Supabase; refresh restores all answers.
-- **Participant Isolation**: Different participants' responses remain isolated.
-- **Final Submission Lock**: Locks session and prevents duplicate submissions.
+### What is tested
 
----
+`npm run test` runs the front-end tests (Vitest, 65 tests):
+- **Allocation & state machine** in local simulation mode (original tests).
+- **Consent and demographics**: Start stays disabled until consent is ticked; languages are stored in a consistent format.
+- **Autosave**: every pending answer is flushed and confirmed before "Continue" or "Submit"; saves for one question never overlap;
+  failed saves are retried; submission is blocked if answers cannot be saved.
+- **Audio**: completion is retried on network errors; a failed server listening check asks the participant to listen again;
+  playback events are logged; no sample-clip fallback when connected to the live database.
+- **Connection errors and shared devices**: a blocking "could not connect" screen instead of a broken session; the browser forgets
+  the session after submission; `?new=1` starts a fresh participant.
+- **Trait order** follows the per-participant random order; comments are capped at 5000 characters.
+- **Pagination** of exports beyond Supabase's 1,000-row limit.
+
+`npm run test:sql` runs 38 database checks in an in-memory Postgres (PGlite) against `full_clean_setup.sql` and the latest migration:
+RPC validation, stage locks, the listening check, anonymous versus admin access, the export views and allocation balance.
 
 ## 11. Researcher Data Access & CSV Export
 
-Researcher responses can be exported securely through two methods:
+Researcher responses can be exported securely through two methods. Both the CLI script and the admin dashboard page through the
+results, so exports are complete even though Supabase returns at most 1,000 rows per request.
 
 ### Method A: Automated CLI Script (Recommended)
 
@@ -374,4 +396,61 @@ Deletes are permanent. The audit log records who deleted what and when, but not 
 Modern web standards in commercial browsers (Chrome, Safari, Firefox, Edge) operate in a sandboxed client environment. As a researcher, please note:
 1. **Physical Attention**: A web browser cannot detect whether a participant is actively listening, has removed their headphones, or muted their physical hardware volume.
 2. **Tab Visibility**: While client-side restrictions prevent forward seeking and timeline skipping, participants may switch tabs or turn down volume.
-3. **Backend Verification**: To maximize research validity, the server records audio start and completion timestamps and verifies minimum playback duration before permitting stage advancement.
+3. **Backend Verification**: The server records audio start and completion timestamps and refuses completion unless at least 85% of
+   the recording's length has passed since playback started. Pauses, tab switches and load errors are logged in `audio_events` and
+   summarised in the export views, so inattentive sessions can be identified.
+
+---
+
+## 14. Updating the Live Project (November 2026 data-integrity release)
+
+Do these steps in order, ideally at a time when nobody is taking part.
+
+1. **Database:** in the Supabase SQL Editor, run `supabase/migrations/20261113000000_optional_comments.sql` if it has not been
+   run yet, then run
+   [`supabase/migrations/20261113010000_data_integrity_fixes.sql`](supabase/migrations/20261113010000_data_integrity_fixes.sql).
+   It is safe on live data and safe to run twice. It:
+   - records each recording's real length (54 to 73 s, previously all 60 s);
+   - adds per-participant random trait order (`trait_order_1`, `trait_order_2`; existing sessions are recorded as the default order);
+   - adds the `audio_events` table and `rpc_record_audio_event`;
+   - makes `rpc_complete_audio` refuse completion before 85% of the recording's length has passed;
+   - makes `rpc_autosave_response` validate answers (ratings must be 1 to 6, comments at most 5000 characters) and accept them only in
+     the matching stage;
+   - counts only submitted and recently active sessions when balancing audio allocation, and serialises allocation;
+   - stops sending the recording's code, title, language and gender to the browser, and stops anonymous reads of `recordings`;
+   - fixes `search_path` on every participant function;
+   - adds new columns to both export views (existing columns unchanged).
+2. **Front end:** merge this branch and let Cloudflare Pages rebuild. Old and new front ends both work with the new database.
+3. **Audio (recommended):** follow "Recommended: normalise the recordings" in section 8.
+4. **Check:** open the site in a private window, complete the study once as a test participant, check the row in `/admin`, export it,
+   then delete the test participant from `/admin`.
+5. **Supabase plan:** make sure the project is not paused (see section 7), and export a CSV regularly during collection.
+
+### Participant-facing changes
+- Page 1 now shows the instructions and the informed-consent statement, with a required consent checkbox.
+- First language is a dropdown with "Other (please specify)"; second language is a multi-select with "None" and "Other".
+- If an answer or the end-of-audio confirmation cannot be saved, the participant is told and can retry; nothing advances until saved.
+- After submitting, the browser forgets the session. Reopening the site on that device shows "already completed" with a button to
+  start a fresh session for another person. A link ending in `?new=1` also starts a fresh session.
+- The page can be zoomed on phones again.
+
+---
+
+## 15. Notes for Data Analysis
+
+- **Use only finished participants:** filter `Session Status = 'submitted'` (wide view) or `session_status = 'submitted'` (long view).
+  Partial sessions belong to people who withdrew by leaving before submission.
+- **Comments are optional:** a participant may have no `q1_comment` / `q2_comment` row (long view) or an empty
+  `A1_Candid_Opinions` / `A2_Candid_Opinions` (wide view).
+- **Ratings:** `answer` is text; the long view also has `answer_numeric` (1 to 6) for rating items. `question_key` names the trait.
+- **Presentation:** `recording_number` (1 or 2) is the order a clip was heard in; `presentation_order` says whether the pure or the
+  code-mixed clip came first. `audio_code`, `audio_category`, `language_variety` and `speaker_gender` describe the guise.
+- **Trait order:** `trait_display_position` (long view) and `A1 Trait Order` / `A2 Trait Order` (wide view) give the on-screen position
+  of each trait. Participants who started before the migration saw the default order 1 to 12.
+- **Listening quality:** `Audio N Listen Seconds`, `Audio N Pauses`, `Audio N Tab Hidden` and `Audio N Load Errors` (wide view) and
+  `audio_listen_seconds` (long view). Listening time runs from the first play to completion, so it includes pauses and replays.
+- **Timing:** `response_time` is when an answer was first given; `final_answer_at` is when it was last changed.
+- **Languages:** first language is one name or `Other: <text>`; second languages are joined with `; ` or the value `None`.
+- **Speaker gender pairing:** allocation always pairs one male and one female speaker per participant, so include speaker gender in
+  models of the pure versus code-mixed contrast.
+
