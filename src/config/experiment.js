@@ -10,7 +10,7 @@
 
 export const EXPERIMENT_CONFIG = {
   // --- Page 1: General Info & Instructions ---
-  title: "Language Attitude Study",
+  title: "Sociology Study",
   instructionHeadline: "Listen to the audio and answer the questions",
   description: "Thank you for participating in this research study. In this experiment, you will listen to two short audio recordings and share your impressions of the speakers.",
   estimatedTime: "Approximately 8-10 minutes",
